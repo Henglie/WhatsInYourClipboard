@@ -1,0 +1,31 @@
+# ---- Build artifacts / WASM 构建产物 ----
+public/*.wasm
+public/*.loader.js
+wasm/build/
+*.o
+*.wasm.map
+
+# ---- Dependencies ----
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ---- Editor / OS ----
+.vs/
+.vscode/
+.idea/
+*.user
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# ---- Logs / temp ----
+*.log
+*.tmp
+dist/
+
+# ---- 第三方参考源码（ToolsFx / CyberChef，仅本地分析用，勿提交） ----
+临时/

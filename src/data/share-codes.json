@@ -1,0 +1,21 @@
+{
+  "_note": "分享码/防伪码注册表。开发者可加条目：pattern 为正则字符串，desc 描述，verify 为官方验证 URL（{{code}} 占位）。三角洲改枪码等待确切格式样本后补充 pattern。",
+  "codes": [
+    {
+      "id": "steam_key",
+      "name": "Steam 密钥",
+      "pattern": "^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$",
+      "desc": "Steam 游戏激活密钥（XXXXX-XXXXX-XXXXX）",
+      "verify": "https://store.steampowered.com/account/registerkey",
+      "note": "在 Steam 客户端「游戏 → 激活产品」中输入。"
+    },
+    {
+      "id": "cdkey_generic",
+      "name": "通用 CD-Key",
+      "pattern": "^([A-Z0-9]{4,5}-){3,4}[A-Z0-9]{4,5}$",
+      "desc": "分段式激活码（多段字母数字以连字符分隔）",
+      "verify": "",
+      "note": "请在对应平台的激活入口使用。"
+    }
+  ]
+}

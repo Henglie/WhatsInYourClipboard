@@ -1,0 +1,246 @@
+/* theme.css — 液态玻璃材质 · 微蓝暗色 */
+
+/* ============ 液态玻璃折射层 ============ */
+/*
+ * 跨浏览器液态玻璃的核心：折射走 filter:url() 而非 backdrop-filter:url()。
+ *  - backdrop-filter:url() 只有 Chromium 系认 → Firefox 永远没折射。
+ *  - filter:url() 作用于元素自身内容，所有引擎都支持 feDisplacementMap。
+ * 做法：liquidGlass.js 给玻璃元素注入一个 .lg-refract 子层，该层用
+ * background-attachment:fixed 画一份与 body::before 视口对齐的光斑拷贝，
+ * 再施加 SVG 位移图 → 边缘把背后光斑真实弯曲，三系引擎跑同一份代码。
+ */
+.lg-refract {
+  position: absolute;
+  inset: 0;                    /* JS 覆写为 -bleed，向外扩一圈供边缘折射采样 */
+  z-index: -1;                 /* 沉到玻璃内容之下 */
+  border-radius: inherit;
+  /* 折射层不透明地呈现「背景拷贝 + 乳白 tint」：负 z-index 会绘制在元素自身
+     背景之上，故乳白 tint 必须并入此层（否则元素的 fill 被盖、玻璃发暗）。
+     tint 平涂在最上层，与光斑一起被位移图弯曲，质感更整。 */
+  background-color: var(--bg-0);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.06)),
+    var(--glow-field);
+  background-attachment: fixed; /* 关键：按视口对齐，与真实背景严丝合缝 */
+  background-size: 100vw 100vh;
+  pointer-events: none;
+  /* filter 由 JS 按元素尺寸生成的位移图注入：filter: blur(..) url(#lg-N) */
+}
+/* 宿主：建立定位+层叠上下文，并按圆角裁掉折射层外扩的 bleed（消除内圈黑边）。
+   overflow:hidden 不裁 box-shadow，故外投影与 hover 辉光不受影响。 */
+[data-glass],
+.lg-host {
+  isolation: isolate;
+}
+.lg-host {
+  overflow: hidden;
+}
+
+/* ============ 玻璃基类 ============ */
+/*
+ * Apple material 的精髓：
+ *  - backdrop-filter 同时 blur + saturate(180%)，让透过的背景色更鲜活
+ *  - 极低不透明度的冷色填充，主体通透感来自背景采样而非白底
+ *  - 顶部 1px 高光描边模拟玻璃边缘折射
+ *  - 外投影给景深，内阴影给厚度
+ */
+.glass {
+  position: relative;
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+}
+
+/* 玻璃顶部高光：一道极细的渐隐亮线，是 Apple 玻璃的灵魂细节 */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    var(--glass-highlight),
+    transparent 30%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* ============ 着陆页主按钮 ============ */
+.cta-button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-width: 300px;
+  padding: 2.2rem 3.2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform var(--dur-base) var(--ease-out-quint),
+    box-shadow var(--dur-base) var(--ease-out-quint),
+    border-color var(--dur-base) var(--ease-out-quint);
+}
+
+.cta-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, var(--glass-highlight), transparent 28%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* 悬停：抬升 + 微放大 + 蓝色辉光晕染（与抽屉同款 quint 滑停曲线，轻盈无回弹） */
+.cta-button:hover {
+  transform: translateY(-3px) scale(1.012);
+  border-color: rgba(var(--glow-a), 0.5);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(var(--glow-a), 0.22),
+    var(--inset-glass);
+}
+
+/* 按下：轻微塌陷，沿用同一曲线，只是更快收尾 */
+.cta-button:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: var(--dur-quick);
+  transition-timing-function: var(--ease-out-quint);
+}
+
+.cta-button .cta-main {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #fff, var(--accent-bright));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.cta-button .cta-divider {
+  font-size: 0.82rem;
+  color: var(--fg-dim);
+  letter-spacing: 0.18em;
+}
+
+.cta-button .cta-shortcut {
+  font-size: 1.05rem;
+  color: var(--fg-muted);
+}
+
+.cta-button .cta-shortcut kbd {
+  font-family: var(--font-mono);
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+  padding: 0.15em 0.55em;
+  border-radius: 7px;
+  font-size: 0.9em;
+  border: 1px solid rgba(var(--glow-a), 0.25);
+  box-shadow: inset 0 1px 0 rgba(190, 215, 255, 0.15);
+}
+
+/* ============ 玻璃卡片 ============ */
+.card {
+  position: relative;
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, var(--glass-highlight), transparent 25%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* ============ 动作按钮（玻璃药丸） ============ */
+.action-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.65em 1.2em;
+  border-radius: 999px;
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+  box-shadow: var(--inset-glass), 0 2px 10px rgba(0, 0, 0, 0.25);
+  color: var(--fg);
+  font-size: 0.92rem;
+  font-family: var(--font-sans);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform var(--dur-quick) var(--ease-out-back),
+    border-color var(--dur-quick) var(--ease-out-quint),
+    background var(--dur-quick) var(--ease-out-quint),
+    box-shadow var(--dur-quick) var(--ease-out-quint);
+}
+
+.action-chip:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: rgba(var(--glow-a), 0.55);
+  background: var(--accent-soft);
+  box-shadow:
+    var(--inset-glass),
+    0 6px 20px rgba(0, 0, 0, 0.3),
+    0 0 22px rgba(var(--glow-a), 0.2);
+}
+
+.action-chip:active {
+  transform: translateY(0) scale(0.95);
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-snap);
+}
+
+.action-chip.copied {
+  border-color: var(--accent);
+  color: var(--accent-bright);
+  background: var(--accent-soft);
+}
+
+/* ============ 顶栏 / 状态栏玻璃 ============ */
+.topbar,
+.statusbar {
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(18px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(18px) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+}

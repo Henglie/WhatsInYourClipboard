@@ -1,0 +1,179 @@
+{
+  "text_url": [
+    { "labelKey": "actionLabel.openInNewTab", "type": "link", "url": "{{url}}" },
+    { "labelKey": "actionLabel.checkUrlscan", "type": "link", "url": "https://urlscan.io/search/#{{url}}" },
+    { "labelKey": "actionLabel.copyLink", "type": "copy", "template": "{{url}}" }
+  ],
+  "text_short": [
+    { "labelKey": "actionLabel.copyText", "type": "copy", "template": "{{text}}" }
+  ],
+  "text_sensitive": [],
+  "text_json": [
+    { "labelKey": "actionLabel.copyJson", "type": "copy", "template": "{{text}}" },
+    { "labelKey": "actionLabel.openJsonlint", "type": "link", "url": "https://jsonlint.com/" }
+  ],
+  "text_code": [
+    { "labelKey": "actionLabel.copyCode", "type": "copy", "template": "{{text}}" }
+  ],
+  "media_image": [
+    { "labelKey": "actionLabel.googleLens", "type": "link", "url": "https://lens.google.com/" },
+    { "labelKey": "actionLabel.tineyeSearch", "type": "link", "url": "https://tineye.com/" }
+  ],
+  "file_exe": [
+    { "labelKey": "actionLabel.threatbookScan", "type": "link", "url": "https://s.threatbook.com/" },
+    { "labelKey": "actionLabel.runLocally", "type": "copy", "template": "start \"\" \"{{fileName}}\"" }
+  ],
+  "file_zip": [
+    { "labelKey": "actionLabel.ezyzipExtract", "type": "link", "url": "https://www.ezyzip.com/" }
+  ],
+  "file_pdf": [
+    { "labelKey": "actionLabel.smallpdfProcess", "type": "link", "url": "https://smallpdf.com/" }
+  ],
+  "encoded_hash": [
+    { "labelKey": "actionLabel.virustotalSearch", "type": "link", "url": "https://www.virustotal.com/gui/search/{{hash}}" },
+    { "labelKey": "actionLabel.threatbookHash", "type": "link", "url": "https://s.threatbook.com/report/hash/{{hash}}" },
+    { "labelKey": "actionLabel.copyHash", "type": "copy", "template": "{{hash}}" }
+  ],
+  "encoded_base64": [
+    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+  ],
+  "token_jwt": [
+    { "labelKey": "actionLabel.copyToken", "type": "copy", "template": "{{token}}" },
+    { "labelKey": "actionLabel.debugJwtio", "type": "link", "url": "https://jwt.io/" }
+  ],
+  "token_uuid": [
+    { "labelKey": "actionLabel.copyUuid", "type": "copy", "template": "{{uuid}}" }
+  ],
+  "crypto_eth": [
+    { "labelKey": "actionLabel.viewEtherscan", "type": "link", "url": "https://etherscan.io/address/{{address}}" },
+    { "labelKey": "actionLabel.copyAddress", "type": "copy", "template": "{{address}}" }
+  ],
+  "crypto_btc": [
+    { "labelKey": "actionLabel.viewBlockchainExplorer", "type": "link", "url": "https://www.blockchain.com/explorer/addresses/btc/{{address}}" },
+    { "labelKey": "actionLabel.copyAddress", "type": "copy", "template": "{{address}}" }
+  ],
+  "num_timestamp": [
+    { "labelKey": "actionLabel.copyIsoTime", "type": "copy", "template": "{{iso}}" }
+  ],
+  "num_color": [
+    { "labelKey": "actionLabel.copyColorValue", "type": "copy", "template": "{{color}}" }
+  ],
+  "num_base": [
+    { "labelKey": "actionLabel.copyDecimal", "type": "copy", "template": "{{dec}}" }
+  ],
+  "enc_url": [
+    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+  ],
+  "enc_html": [
+    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+  ],
+  "enc_unicode": [
+    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+  ],
+  "enc_morse": [
+    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+  ],
+  "id_card": [],
+  "id_phone": [],
+  "id_bankcard": [],
+  "id_ip": [
+    { "labelKey": "actionLabel.checkIp138", "type": "link", "url": "https://www.ip138.com/iplookup.php?ip={{ip}}" },
+    { "labelKey": "actionLabel.checkIpinfo", "type": "link", "url": "https://ipinfo.io/{{ip}}" }
+  ],
+  "id_plate": [],
+  "struct_csv": [],
+  "struct_cron": [
+    { "labelKey": "actionLabel.debugCrontabGuru", "type": "link", "url": "https://crontab.guru/" }
+  ],
+  "struct_ua": [],
+  "struct_sql": [
+    { "labelKey": "actionLabel.copySql", "type": "copy", "template": "{{sql}}" }
+  ],
+  "struct_markdown": [
+    { "labelKey": "actionLabel.copyMarkdown", "type": "copy", "template": "{{text}}" }
+  ],
+  "struct_html": [
+    { "labelKey": "actionLabel.copyHtmlSource", "type": "copy", "template": "{{html}}" }
+  ],
+  "struct_xml": [
+    { "labelKey": "actionLabel.copyXmlSource", "type": "copy", "template": "{{text}}" }
+  ],
+  "life_address": [
+    { "labelKey": "actionLabel.viewAmap", "type": "link", "url": "https://www.amap.com/search?query={{query}}" },
+    { "labelKey": "actionLabel.copyAddress", "type": "copy", "template": "{{query}}" }
+  ],
+  "life_coord": [
+    { "labelKey": "actionLabel.openAmapMarker", "type": "link", "url": "https://uri.amap.com/marker?position={{gcj}}" },
+    { "labelKey": "actionLabel.copyWgs84", "type": "copy", "template": "{{wgs}}" }
+  ],
+  "life_math": [
+    { "labelKey": "actionLabel.copyResult", "type": "copy", "template": "{{result}}" }
+  ],
+  "life_isbn": [
+    { "labelKey": "actionLabel.searchDouban", "type": "link", "url": "https://search.douban.com/book/subject_search?search_text={{isbn}}" }
+  ],
+  "life_express": [
+    { "labelKey": "actionLabel.searchKuaidi100", "type": "link", "url": "https://www.kuaidi100.com/chaxun?nu={{code}}" }
+  ],
+  "culture_cipai": [
+    { "labelKey": "actionLabel.searchSouyun", "type": "link", "url": "https://sou-yun.cn/QueryPoem.aspx?key={{q}}" },
+    { "labelKey": "actionLabel.wikipediaCipai", "type": "link", "url": "https://zh.wikipedia.org/wiki/{{q}}" }
+  ],
+  "culture_poetry": [
+    { "labelKey": "actionLabel.searchSouyunPoetry", "type": "link", "url": "https://sou-yun.cn/QueryPoem.aspx?key={{q}}" },
+    { "labelKey": "actionLabel.searchGushiwen", "type": "link", "url": "https://so.gushiwen.cn/search.aspx?value={{full}}" },
+    { "labelKey": "actionLabel.copyFullText", "type": "copy", "template": "{{full}}" }
+  ],
+  "culture_zh_query": [
+    { "labelKey": "actionLabel.searchSouyunWord", "type": "link", "url": "https://sou-yun.cn/QueryPoem.aspx?key={{q}}" },
+    { "labelKey": "actionLabel.searchZdic", "type": "link", "url": "https://www.zdic.net/hans/{{q}}" },
+    { "labelKey": "actionLabel.copyOriginal", "type": "copy", "template": "{{q}}" }
+  ],
+  "culture_translate": [
+    { "labelKey": "actionLabel.googleTranslate", "type": "link", "url": "https://translate.google.com/?sl=auto&tl=zh-CN&text={{text}}&op=translate" },
+    { "labelKey": "actionLabel.deeplTranslate", "type": "link", "url": "https://www.deepl.com/translator#auto/zh/{{text}}" }
+  ],
+  "culture_emoji": [
+    { "labelKey": "actionLabel.searchEmojipedia", "type": "link", "url": "https://emojipedia.org/zh/search?q={{q}}" }
+  ],
+  "vert_barcode": [
+    { "labelKey": "actionLabel.searchBarcodeLookup", "type": "link", "url": "https://www.barcodelookup.com/{{code}}" },
+    { "labelKey": "actionLabel.copyBarcode", "type": "copy", "template": "{{code}}" }
+  ],
+  "vert_sharecode": [
+    { "labelKey": "actionLabel.copyShareCode", "type": "copy", "template": "{{code}}" }
+  ],
+  "vert_sharecode_verify": [
+    { "labelKey": "actionLabel.goToVerify", "type": "link", "url": "{{verify}}" },
+    { "labelKey": "actionLabel.copyShareCode", "type": "copy", "template": "{{code}}" }
+  ],
+  "vert_delta": [
+    { "labelKey": "actionLabel.searchDeltaLoadout", "type": "link", "url": "https://www.bing.com/search?q=三角洲行动 {{weapon}} 改枪码 配件" },
+    { "labelKey": "actionLabel.deltaWiki", "type": "link", "url": "https://wiki.biligame.com/deltaoperation2024/" },
+    { "labelKey": "actionLabel.copyGunsmithCode", "type": "copy", "template": "{{code}}" }
+  ],
+  "file_extended": [],
+  "file_pem": [],
+  "media_svg": [
+    { "labelKey": "actionLabel.copySvgSource", "type": "copy", "template": "{{svg}}" }
+  ],
+  "codec_binary": [
+    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+  ],
+  "codec_ascii85": [
+    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+  ],
+  "codec_qp": [
+    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+  ],
+  "codec_uu": [
+    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+  ],
+  "codec_base32": [
+    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+  ],
+  "text_plain": [
+    { "labelKey": "actionLabel.copyFullText", "type": "copy", "template": "{{text}}" },
+    { "labelKey": "actionLabel.googleSearch", "type": "link", "url": "https://www.google.com/search?q={{text}}" }
+  ]
+}

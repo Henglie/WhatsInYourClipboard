@@ -1,0 +1,230 @@
+/**
+ * identity.js — 身份信息深度解析分类器。
+ * 当整串就是单个标识符（身份证/手机/银行卡/IP/MAC/车牌）时深度拆解。
+ * 标识符本身仍打码展示，推导属性基于结构而非泄漏明文。
+ */
+import { BaseClassifier } from "./BaseClassifier.js";
+import { buildInfoCard } from "../../views/renderers/infoCard.js";
+import { DataPack } from "../DataPack.js";
+import { parseIdCard, validateIdCard, maskIdCard } from "../idcard.js";
+import { t } from "../../i18n/i18n.js";
+
+// ---------- 身份证 ----------
+export class IdCardClassifier extends BaseClassifier {
+  static priority = 70;
+
+  match(item) {
+    return item.isText && /^\d{17}[\dXx]$/.test(item.text.trim());
+  }
+
+  async parse(item) {
+    const id = item.text.trim();
+    const regionMap = await DataPack.load("region-codes");
+    const info = parseIdCard(id, regionMap);
+    return {
+      actionKey: "id_card",
+      subtitle: t("cls.idCard"),
+      tplVars: {},
+      render: (el) => {
+        el.appendChild(
+          buildInfoCard(
+            [
+              [t("cardRow.idNumber"), maskIdCard(id)],
+              [t("cardRow.idCheck"), info.valid ? t("cardRow.idCheckValid") : t("cardRow.idCheckInvalid")],
+              [t("cardRow.idHometown"), info.province],
+              [t("cardRow.idBirthday"), info.birthday],
+              [t("cardRow.idAge"), `${info.age} 岁`],
+              [t("cardRow.idGender"), info.gender],
+              [t("cardRow.idZodiac"), info.zodiac],
+              [t("cardRow.idConstellation"), info.constellation],
+            ],
+            {
+              title: t("cardTitle.idCard"),
+              note: t("cardNote.idCard"),
+            }
+          )
+        );
+      },
+    };
+  }
+}
+
+// ---------- 手机号 ----------
+export class PhoneClassifier extends BaseClassifier {
+  static priority = 68;
+
+  match(item) {
+    return item.isText && /^1[3-9]\d{9}$/.test(item.text.trim());
+  }
+
+  async parse(item) {
+    const phone = item.text.trim();
+    const segMap = await DataPack.load("phone-segments");
+    const carrier = segMap ? segMap[phone.slice(0, 3)] || t("cardRow.idUnknownCarrier") : t("cardRow.idNeedSegDb");
+    const masked = phone.slice(0, 3) + "****" + phone.slice(7);
+    return {
+      actionKey: "id_phone",
+      subtitle: t("cls.phone"),
+      tplVars: {},
+      render: (el) => {
+        el.appendChild(
+          buildInfoCard(
+            [
+              [t("cardRow.idNumber"), masked],
+              [t("cardRow.idCarrier"), carrier],
+              [t("cardRow.idSegment"), phone.slice(0, 3) + t("cardRow.idSegmentPrefix")],
+            ],
+            {
+              title: t("cardTitle.phone"),
+              note: t("cardNote.phone"),
+            }
+          )
+        );
+      },
+    };
+  }
+}
+
+// ---------- 银行卡（Luhn 校验 + BIN 发卡行） ----------
+function luhnValid(num) {
+  let sum = 0;
+  let alt = false;
+  for (let i = num.length - 1; i >= 0; i--) {
+    let d = Number(num[i]);
+    if (alt) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+    alt = !alt;
+  }
+  return sum % 10 === 0;
+}
+
+export class BankCardClassifier extends BaseClassifier {
+  static priority = 66;
+
+  match(item) {
+    return item.isText && /^\d{16,19}$/.test(item.text.trim());
+  }
+
+  async parse(item) {
+    const card = item.text.trim();
+    const valid = luhnValid(card);
+    const binMap = await DataPack.load("bank-bins");
+    let info = null;
+    if (binMap) {
+      // 最长前缀匹配
+      for (let len = 9; len >= 6; len--) {
+        const hit = binMap[card.slice(0, len)];
+        if (hit) {
+          info = hit;
+          break;
+        }
+      }
+    }
+    const masked = "**** **** **** " + card.slice(-4);
+    return {
+      actionKey: "id_bankcard",
+      subtitle: t("cls.bankCard"),
+      tplVars: {},
+      render: (el) => {
+        el.appendChild(
+          buildInfoCard(
+            [
+              [t("cardRow.idCardNumber"), masked],
+              [t("cardRow.idLuhn"), valid ? t("cardRow.idLuhnValid") : t("cardRow.idLuhnInvalid")],
+              [t("cardRow.idIssuer"), info ? info.bank : t("cardRow.idIssuerUnknown")],
+              [t("cardRow.idCardType"), info ? info.type : "—"],
+            ],
+            {
+              title: t("cardTitle.bankCard"),
+              note: t("cardNote.bankCard"),
+            }
+          )
+        );
+      },
+    };
+  }
+}
+
+// ---------- IP 地址 ----------
+const IPV4_RE =
+  /^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)$/;
+
+function ipClass(ip) {
+  const o = ip.split(".").map(Number);
+  if (o[0] === 10) return t("cardRow.ipPrivateA");
+  if (o[0] === 172 && o[1] >= 16 && o[1] <= 31) return t("cardRow.ipPrivateB");
+  if (o[0] === 192 && o[1] === 168) return t("cardRow.ipPrivateC");
+  if (o[0] === 127) return t("cardRow.ipLoopback");
+  if (o[0] === 169 && o[1] === 254) return t("cardRow.ipLinkLocal");
+  return t("cardRow.ipPublic");
+}
+
+export class IpClassifier extends BaseClassifier {
+  static priority = 64;
+
+  match(item) {
+    return item.isText && IPV4_RE.test(item.text.trim());
+  }
+
+  async parse(item) {
+    const ip = item.text.trim();
+    const scope = ipClass(ip);
+    return {
+      actionKey: "id_ip",
+      subtitle: t("cls.ipv4"),
+      tplVars: { ip },
+      render: (el) => {
+        el.appendChild(
+          buildInfoCard(
+            [
+              [t("cardRow.idAddress"), ip],
+              [t("cardRow.idType"), scope],
+            ],
+            {
+              title: t("cardTitle.ipAddress"),
+              note: t("cardNote.addressLookup"),
+            }
+          )
+        );
+      },
+    };
+  }
+}
+
+// ---------- 车牌号 ----------
+const PLATE_RE =
+  /^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领][A-HJ-NP-Z](?:[A-HJ-NP-Z0-9]{5}|[A-HJ-NP-Z0-9]{4}[A-HJ-NP-Z0-9挂学警港澳])$/;
+
+export class PlateClassifier extends BaseClassifier {
+  static priority = 62;
+
+  match(item) {
+    return item.isText && PLATE_RE.test(item.text.trim());
+  }
+
+  async parse(item) {
+    const plate = item.text.trim();
+    const isNewEnergy = plate.length === 8;
+    return {
+      actionKey: "id_plate",
+      subtitle: t("cls.plate"),
+      tplVars: {},
+      render: (el) => {
+        el.appendChild(
+          buildInfoCard(
+            [
+              [t("cardRow.idPlate"), plate],
+              [t("cardRow.idProvinceShort"), plate[0]],
+              [t("cardRow.idIssuingAuthority"), plate[1] + t("cardRow.idPlateCode")],
+              [t("cardRow.idType"), isNewEnergy ? t("cardRow.idPlateNewEnergy") : t("cardRow.idPlateNormal")],
+            ],
+            { title: t("cardTitle.plate") }
+          )
+        );
+      },
+    };
+  }
+}
