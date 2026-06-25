@@ -70,3 +70,46 @@ export async function readClipboard() {
 
   return items;
 }
+
+/**
+ * 从 DataTransfer / ClipboardData 构造 ClipItem[]。
+ *
+ * 这是 read()/readText() 之外的第二条进路，覆盖：
+ *  - 移动端「长按粘贴」触发的 paste 事件（无需读权限、几乎全平台支持）。
+ *  - 桌面把 .exe / 图片等文件「拖放」到页面（系统复制文件时剪贴板里只有
+ *    文件路径而非内容，clipboard.read() 永远拿不到字节，拖放才有真实字节）。
+ *
+ * 与 readClipboard() 同样的优先级：先取文件（二进制），无文件再取文本。
+ * @param {DataTransfer} dt  e.clipboardData（paste）或 e.dataTransfer（drop）
+ * @returns {Promise<ClipItem[]>}
+ */
+export async function itemsFromDataTransfer(dt) {
+  const items = [];
+  if (!dt) return items;
+
+  // 文件优先（图片 / 可执行文件 / 压缩包等二进制）
+  const files = dt.files && dt.files.length ? Array.from(dt.files) : [];
+  for (const file of files) {
+    const bytes = await blobToBytes(file);
+    // 文本类文件按文本处理，便于走文本分类器；其余按二进制
+    if (file.type.startsWith("text/") || /\.(txt|json|csv|md|log|xml|svg)$/i.test(file.name)) {
+      const text = new TextDecoder("utf-8").decode(bytes);
+      items.push(new ClipItem({ bytes, mime: file.type || "text/plain", text, meta: { fileName: file.name } }));
+    } else {
+      items.push(new ClipItem({ bytes, mime: file.type || "application/octet-stream", meta: { fileName: file.name } }));
+    }
+  }
+  if (items.length) return items;
+
+  // 无文件：取文本（同时取 plain 与 html，与 readClipboard 一致）
+  const plain = dt.getData ? dt.getData("text/plain") : "";
+  const html = dt.getData ? dt.getData("text/html") : "";
+  const primary = plain || html;
+  if (primary) {
+    const bytes = new TextEncoder().encode(primary);
+    const meta = {};
+    if (html && html.trim() && html.trim() !== (plain || "").trim()) meta.html = html;
+    items.push(new ClipItem({ bytes, mime: "text/plain", text: primary, meta }));
+  }
+  return items;
+}

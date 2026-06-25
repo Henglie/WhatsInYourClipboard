@@ -5,7 +5,10 @@
 import { BaseClassifier } from "./BaseClassifier.js";
 import { enableZoom } from "../../ui/lightbox.js";
 import { buildInfoCard } from "../../views/renderers/infoCard.js";
-import { readImageSize, extractColors } from "../imageInfo.js";
+import { readImageSize, readImageDetail, extractColors } from "../imageInfo.js";
+import { parseExif, parseMediaMeta, fmtDuration } from "../mediaMeta.js";
+import { detectExtended } from "../fileformats.js";
+import { renderMap } from "../../ui/mapLoader.js";
 import { t } from "../../i18n/i18n.js";
 
 function fmtSize(n) {
@@ -25,6 +28,8 @@ export class MediaClassifier extends BaseClassifier {
     const blob = new Blob([item.bytes], { type: item.mime });
     const url = URL.createObjectURL(blob);
     const dim = readImageSize(item.bytes);
+    const detail = readImageDetail(item.bytes); // 位深/色彩类型/透明/动图帧数
+    const exif = parseExif(item.bytes); // JPEG EXIF（含 GPS），非 JPEG 为 null
 
     return {
       actionKey: "media_image",
@@ -47,8 +52,64 @@ export class MediaClassifier extends BaseClassifier {
           [t("cardRow.mediaSize"), fmtSize(item.size)],
         ];
         if (dim) rows.push([t("cardRow.mediaDimensions"), `${dim.width} × ${dim.height} 像素`]);
+        if (detail) {
+          if (detail.bitDepth) rows.push([t("cardRow.imgBitDepth"), `${detail.bitDepth} bit`]);
+          if (detail.colorType) rows.push([t("cardRow.imgColorType"), detail.colorType]);
+          if (detail.hasAlpha != null) {
+            rows.push([t("cardRow.imgAlpha"), detail.hasAlpha ? t("cardRow.imgAlphaYes") : t("cardRow.imgAlphaNo")]);
+          }
+          if (detail.animated) {
+            rows.push([t("cardRow.imgAnimated"), t("cardRow.imgFrames", { count: detail.frames || "?" })]);
+          }
+          if (detail.progressive) rows.push([t("cardRow.imgScan"), t("cardRow.imgProgressive")]);
+          if (detail.interlaced) rows.push([t("cardRow.imgScan"), t("cardRow.imgInterlaced")]);
+          if (detail.mode) rows.push([t("cardRow.imgMode"), detail.mode]);
+        }
         const card = buildInfoCard(rows, { title: t("cardTitle.imageInfo") });
         el.appendChild(card);
+
+        // EXIF 拍摄信息（仅 JPEG 且有 EXIF 时）
+        if (exif) {
+          const exRows = [];
+          if (exif.make || exif.model) {
+            exRows.push([t("cardRow.exifCamera"), [exif.make, exif.model].filter(Boolean).join(" ")]);
+          }
+          const shot = exif.dateTimeOriginal || exif.dateTime;
+          if (shot) exRows.push([t("cardRow.exifDateTime"), shot]);
+          if (exif.fNumber) exRows.push([t("cardRow.exifAperture"), "f/" + exif.fNumber]);
+          if (exif.exposureTime) {
+            const et = exif.exposureTime < 1 ? `1/${Math.round(1 / exif.exposureTime)}` : String(exif.exposureTime);
+            exRows.push([t("cardRow.exifExposure"), et + " s"]);
+          }
+          if (exif.iso) exRows.push([t("cardRow.exifIso"), "ISO " + exif.iso]);
+          if (exif.focalLength) exRows.push([t("cardRow.exifFocal"), exif.focalLength + " mm"]);
+          if (exif.gps) {
+            const f = (n) => n.toFixed(6);
+            exRows.push([t("cardRow.exifGps"), `${f(exif.gps.lat)}, ${f(exif.gps.lng)}`]);
+          }
+          if (exRows.length) {
+            el.appendChild(buildInfoCard(exRows, {
+              title: t("cardTitle.exif"),
+              note: exif.gps ? t("cardNote.exifGps") : undefined,
+            }));
+          }
+          // GPS → 点击查看地图（隐私铁律：默认不加载，点击才向 OSM 请求）
+          if (exif.gps) {
+            const mapBtn = document.createElement("button");
+            mapBtn.className = "map-load-btn";
+            mapBtn.textContent = t("cardRow.lifeLoadMap");
+            const mapBox = document.createElement("div");
+            mapBox.className = "map-box";
+            mapBox.style.display = "none";
+            const { lat, lng } = exif.gps;
+            mapBtn.addEventListener("click", () => {
+              mapBtn.remove();
+              mapBox.style.display = "block";
+              renderMap(mapBox, lat, lng, `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+            });
+            el.append(mapBtn, mapBox);
+          }
+        }
 
         // 主色调（异步）
         const palette = document.createElement("div");
@@ -134,6 +195,74 @@ export class SvgClassifier extends BaseClassifier {
         pre.className = "code";
         pre.textContent = src.length > 3000 ? src.slice(0, 3000) + "\n…" : src;
         el.append(lbl, pre);
+      },
+    };
+  }
+}
+
+// ---------- 音频 / 视频（深度元信息）----------
+// 让音视频不再只显示「一个名字」：MP3 标签 + 时长、WAV/FLAC 采样参数、
+// MP4/MOV 时长 + 分辨率。视频可内嵌 <video> 本地预览，音频内嵌 <audio>。
+export class AudioVideoClassifier extends BaseClassifier {
+  static priority = 28; // 高于通用 FileClassifier(25)/ExtendedFile(24)，抢先深挖媒体
+
+  match(item) {
+    if (item.isText) return false;
+    return parseMediaMeta(item.bytes, item.mime) !== null;
+  }
+
+  async parse(item) {
+    const meta = parseMediaMeta(item.bytes, item.mime);
+    if (!meta) return null;
+    const isVideo = meta.kind === "video";
+    // MIME：优先剪贴板给的，否则按解析出的格式兜一个，供 <audio>/<video> 用
+    const fmtMime = {
+      MP3: "audio/mpeg", WAV: "audio/wav", FLAC: "audio/flac", MP4: isVideo ? "video/mp4" : "audio/mp4",
+    };
+    const mime = item.mime && item.mime !== "application/octet-stream"
+      ? item.mime
+      : (fmtMime[meta.format] || (isVideo ? "video/mp4" : "audio/mpeg"));
+    const blob = new Blob([item.bytes], { type: mime });
+    const url = URL.createObjectURL(blob);
+
+    return {
+      actionKey: isVideo ? "media_video" : "media_audio",
+      subtitle: isVideo ? t("cls.video") : t("cls.audio"),
+      tplVars: { format: meta.format },
+      render: (el) => {
+        // 本地预览（不外发：blob: URL 指向内存字节）
+        const player = document.createElement(isVideo ? "video" : "audio");
+        player.src = url;
+        player.controls = true;
+        player.preload = "metadata";
+        player.className = isVideo ? "media-video" : "media-audio";
+        el.appendChild(player);
+
+        const rows = [[t("cardRow.mediaFormat"), meta.format]];
+        if (meta.brand) rows.push([t("cardRow.mediaBrand"), meta.brand]);
+        if (isVideo && meta.width) rows.push([t("cardRow.mediaDimensions"), `${meta.width} × ${meta.height} 像素`]);
+        if (meta.duration != null) {
+          const d = fmtDuration(meta.duration);
+          if (d) rows.push([t("cardRow.mediaDuration"), d]);
+        }
+        if (meta.sampleRate) rows.push([t("cardRow.mediaSampleRate"), `${(meta.sampleRate / 1000).toFixed(1)} kHz`]);
+        if (meta.channels) rows.push([t("cardRow.mediaChannels"), meta.channels === 1 ? t("cardRow.mediaMono") : meta.channels === 2 ? t("cardRow.mediaStereo") : String(meta.channels)]);
+        if (meta.bitsPerSample) rows.push([t("cardRow.mediaBitDepth"), `${meta.bitsPerSample} bit`]);
+        if (meta.bitrate) rows.push([t("cardRow.mediaBitrate"), `${meta.bitrate} kbps`]);
+        rows.push([t("cardRow.mediaSize"), fmtSize(item.size)]);
+        el.appendChild(buildInfoCard(rows, {
+          title: isVideo ? t("cardTitle.videoInfo") : t("cardTitle.audioInfo"),
+        }));
+
+        // 音频 ID3 标签（曲名/艺术家/专辑/年份）单独成卡
+        if (!isVideo && (meta.title || meta.artist || meta.album)) {
+          const tagRows = [];
+          if (meta.title) tagRows.push([t("cardRow.mediaTrackTitle"), meta.title]);
+          if (meta.artist) tagRows.push([t("cardRow.mediaArtist"), meta.artist]);
+          if (meta.album) tagRows.push([t("cardRow.mediaAlbum"), meta.album]);
+          if (meta.year) tagRows.push([t("cardRow.mediaYear"), String(meta.year)]);
+          el.appendChild(buildInfoCard(tagRows, { title: t("cardTitle.audioTags") }));
+        }
       },
     };
   }

@@ -40,20 +40,81 @@ export function looksLikeAddress(text) {
 }
 
 // ---------- 经纬度坐标 ----------
-const COORD_RE = /^\s*(-?\d{1,3}(?:\.\d+)?)\s*[,，]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/;
+// 支持多种写法：
+//   "39.9,116.4" / "39.9, 116.4" / "39.9 116.4"（逗号或空格分隔）
+//   "39.9N,116.4E" / "N39.9 E116.4"（带方向字母）
+//   "39°54'30\"N 116°23'30\"E"（度分秒 DMS）
+// 收紧误报：纯整数空格对（如 "12 34"）不算坐标——要么带小数点、
+// 要么带逗号、要么带方向/度符号，才认。
+const DECIMAL_PAIR =
+  /^([NSEW]?)\s*(-?\d{1,3}(?:\.\d+)?)°?\s*([NSEW]?)\s*([,，]|\s+)\s*([NSEW]?)\s*(-?\d{1,3}(?:\.\d+)?)°?\s*([NSEW]?)$/i;
+// 一个 DMS 分量：度°[分'[秒"]] + 方向（可前可后）。度符号必需，避免误吞普通数字。
+const DMS_COMPONENT =
+  "([NSEW])?\\s*(\\d{1,3})\\s*[°度]\\s*(?:(\\d{1,2})\\s*['′分])?\\s*(?:(\\d{1,2}(?:\\.\\d+)?)\\s*[\"″秒])?\\s*([NSEW])?";
 
-export function parseCoord(text) {
-  const m = text.trim().match(COORD_RE);
-  if (!m) return null;
-  const a = parseFloat(m[1]);
-  const b = parseFloat(m[2]);
-  // 启发式判断：纬度 |a|<=90，经度 |b|<=180
+function applyDir(value, dir) {
+  if (!dir) return value;
+  dir = dir.toUpperCase();
+  // S / W 为负向；N / E 为正
+  return dir === "S" || dir === "W" ? -Math.abs(value) : Math.abs(value);
+}
+
+function dmsToDecimal(deg, min, sec) {
+  return (deg || 0) + (min || 0) / 60 + (sec || 0) / 3600;
+}
+
+// 拿到两个数 + 各自方向字母后，判定经纬归属并范围校验。
+function assemble(a, b, dirA, dirB) {
+  const aIsLat = /[NS]/i.test(dirA || "");
+  const bIsLng = /[EW]/i.test(dirB || "");
+  const aIsLng = /[EW]/i.test(dirA || "");
+  const bIsLat = /[NS]/i.test(dirB || "");
   let lat, lng;
-  if (Math.abs(a) <= 90 && Math.abs(b) <= 180) { lat = a; lng = b; }
-  else if (Math.abs(b) <= 90 && Math.abs(a) <= 180) { lat = b; lng = a; }
-  else return null;
+  if (aIsLat || bIsLng) { lat = a; lng = b; }
+  else if (aIsLng || bIsLat) { lat = b; lng = a; }
+  else {
+    // 无方向：启发式，|≤90| 视作纬度
+    if (Math.abs(a) <= 90 && Math.abs(b) <= 180) { lat = a; lng = b; }
+    else if (Math.abs(b) <= 90 && Math.abs(a) <= 180) { lat = b; lng = a; }
+    else return null;
+  }
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
   return { lat, lng };
+}
+
+export function parseCoord(text) {
+  const raw = text.trim();
+
+  // —— 1) 度分秒 DMS（优先，特征最明确）——
+  const dmsRe = new RegExp(
+    "^" + DMS_COMPONENT + "\\s*[,，]?\\s+" + DMS_COMPONENT + "$",
+    "i"
+  );
+  const dms = raw.match(dmsRe);
+  if (dms) {
+    const g = dms.slice(1);
+    const c1 = g.slice(0, 5), c2 = g.slice(5, 10);
+    const v1 = applyDir(dmsToDecimal(+c1[1], +c1[2] || 0, +c1[3] || 0), c1[0] || c1[4]);
+    const v2 = applyDir(dmsToDecimal(+c2[1], +c2[2] || 0, +c2[3] || 0), c2[0] || c2[4]);
+    return assemble(v1, v2, c1[0] || c1[4], c2[0] || c2[4]);
+  }
+
+  // —— 2) 十进制度（逗号或空格分隔，可带方向）——
+  const dm = raw.match(DECIMAL_PAIR);
+  if (dm) {
+    const [, d1a, v1, d1b, sep, d2a, v2, d2b] = dm;
+    const dirA = d1a || d1b;
+    const dirB = d2a || d2b;
+    // 误报收紧：空格分隔（非逗号）且两边都无方向、无小数点时，
+    // 是普通数字对（如 "12 34"），不当坐标。
+    const isComma = /[,，]/.test(sep);
+    const hasDot = v1.includes(".") || v2.includes(".");
+    const hasDir = !!(dirA || dirB);
+    if (!isComma && !hasDot && !hasDir) return null;
+    return assemble(applyDir(parseFloat(v1), dirA), applyDir(parseFloat(v2), dirB), dirA, dirB);
+  }
+
+  return null;
 }
 
 // WGS84 → GCJ02（火星坐标，国测局加密，国内地图用）

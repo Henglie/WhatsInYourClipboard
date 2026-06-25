@@ -4,9 +4,10 @@
  * 返回各区域的句柄，交由 main 填充。
  */
 import { renderHexView } from "./HexView.js";
+import { frostOverlay } from "./renderers/blurReveal.js";
 import { t } from "../i18n/i18n.js";
 
-export function renderSplit(root, { subtitle, bytes, candidates = [], onSwitch, onReset }) {
+export function renderSplit(root, { subtitle, bytes, candidates = [], sensitive = false, onSwitch, onReset }) {
   root.innerHTML = "";
 
   const result = document.createElement("section");
@@ -67,6 +68,22 @@ export function renderSplit(root, { subtitle, bytes, candidates = [], onSwitch, 
   // Hex 表格延迟到容器入 DOM 后渲染（需要 clientWidth）
   requestAnimationFrame(() => renderHexView(leftBody, bytes));
 
+  // 敏感内容：右侧打了码，左侧 Hex 把原始字节全摊开 = 明文泄露。给整块
+  // 「骨相」蒙一层无缝磨砂玻璃（点击解除、移开恢复），与右侧 blurReveal 一致。
+  // 覆盖层挂在 leftPane（relative），盖住 leftBody（top:2rem 以下），本身不随内容滚动。
+  // 切候选时可能从敏感↔不敏感，按需挂/摘覆盖层（句柄 setHexMask）。
+  let hexMask = null;
+  const setHexMask = (on) => {
+    if (on && !hexMask) {
+      hexMask = frostOverlay({ hint: t("view.hexMasked"), host: leftPane });
+      leftPane.appendChild(hexMask);
+    } else if (!on && hexMask) {
+      hexMask.remove();
+      hexMask = null;
+    }
+  };
+  setHexMask(sensitive);
+
   // 右：渲染（皮相）
   const rightPane = document.createElement("div");
   rightPane.className = "pane pane--render";
@@ -99,5 +116,6 @@ export function renderSplit(root, { subtitle, bytes, candidates = [], onSwitch, 
     renderTarget: rightBody,
     actionsList,
     setSubtitle: (s) => { sub.textContent = t("view.answerPrefix") + s; },
+    setHexMask,
   };
 }

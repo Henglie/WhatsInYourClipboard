@@ -1,0 +1,1387 @@
+/* ============================================================
+ *  FairyGlass · glass.css
+ *  组件层：基于 tokens.css 的玻璃材质构建可复用 UI 组件。
+ *  ------------------------------------------------------------
+ *  依赖：必须先引入 tokens.css。
+ *
+ *  组件清单（基础梯队）：
+ *   - .glass / .glass--strong   玻璃基类（卡片、面板的底材）
+ *   - .fg-card                  圆角玻璃卡片（+ --flat / --accent）
+ *   - .fg-bar                   贴边长条（顶/底/侧栏，走磨砂不走折射）
+ *   - .fg-btn (+ --primary/--danger/--ghost/--tiny)  按钮
+ *   - .fg-chip                  玻璃药丸（动作/标签）
+ *   - .fg-cta                   着陆页主按钮（折射透镜）
+ *   - .fg-switch                开关
+ *   - .fg-input / .fg-num       输入框 / 数字步进框
+ *   - .fg-search                弹性搜索框（聚焦受控回弹展宽）
+ *   - .fg-drawer                抽屉（单块折叠，grid 0fr→1fr）
+ *   - .fg-nav-item              侧栏导航项
+ *   - .fg-section-title         分区标题（带渐隐分隔线）
+ *   - .fg-slogan                标语（衬线蓝白渐变）
+ *   - .fg-modal-mask / .fg-modal  弹窗
+ *   - .fg-toast                 浮层提示
+ *   - .fg-badge                 徽章（含 --privacy 呼吸点）
+ *
+ *  组件清单（VIS 补全梯队，文件后半段）：
+ *   - .fg-app / .fg-sidebar / .fg-topbar / .fg-main  应用外壳
+ *   - .fg-accordion             折叠手风琴（分类抽屉，对齐快存软件目录）
+ *   - .fg-tabs / .fg-tab        标签页（下划线滑入）
+ *   - .fg-segmented             分段控件（互斥视图/模式切换）
+ *   - .fg-select / .fg-menu     下拉触发器 / 浮层菜单
+ *   - .fg-textarea              文本域
+ *   - .fg-check / .fg-radio     复选框 / 单选框（玻璃自绘）
+ *   - .fg-tag (+ 语义色变体)    标签（比 badge 小巧、可成组）
+ *   - .fg-tooltip               提示气泡（纯 CSS hover）
+ *   - .fg-progress              进度条（含 --indeterminate）
+ *   - .fg-spinner / .fg-skeleton  加载转圈 / 骨架屏
+ *   - .fg-avatar                头像
+ *   - .fg-alert                 提示横幅（info/ok/warn/danger）
+ *   - .fg-table                 数据表格
+ *   - .fg-list / .fg-list-item  列表
+ *   - .fg-breadcrumb            面包屑
+ *   - .fg-pagination            分页
+ *   - .fg-empty                 空状态
+ *   - .fg-divider               分隔线（含 --vertical）
+ *   - .fg-kbd                   键帽
+ *   - .fg-stepper               步进器（数字加减组件化）
+ *
+ *  折射约定（性能与黑边的底线，务必遵守）：
+ *   - 折射透镜（filter:url 折射层）只给【浮空、数量少】的元素：hero 卡、主按钮、
+ *     弹窗、单独强调的胶囊。用 data-glass="card|button|chip" 标记，由
+ *     liquidGlass.js 注入。
+ *   - 贴视口边缘的长条（顶/底/侧栏）→ data-glass="bar" 或直接 .fg-bar：
+ *     只走磨砂。折射层的 fixed 光斑图在视口外是纯深色，贴边会采到 → 黑边。
+ *   - 滚动容器（overflow-y:auto/scroll）→ 跳过折射：折射层会随内容滚走并引发重绘。
+ *   - 大批量密集卡片（几十上百张）→ 走磨砂，不上折射，护性能。
+ * ============================================================ */
+
+/* ============ 折射层（liquidGlass.js 注入的子层样式） ============ */
+/* 跨浏览器液态玻璃核心：折射走 filter:url() 而非 backdrop-filter:url()。
+   做法：给玻璃元素注入 .lg-refract 子层，该层用 background-attachment:fixed
+   画一份与 body::before / --glow-field 视口对齐的光斑拷贝，再施加 SVG 位移图。
+   于是「透过玻璃看到的光斑」与真实背景严丝合缝，仅边缘被弯曲，三系引擎一致。 */
+.lg-refract {
+  position: absolute;
+  inset: 0; /* JS 覆写为 -bleed，向外扩一圈供边缘折射采样 */
+  z-index: -1; /* 沉到玻璃内容之下 */
+  border-radius: inherit;
+  /* 折射层不透明地呈现「背景拷贝 + 乳白 tint」：负 z-index 会绘制在元素自身
+     背景之上，故乳白 tint 必须并入此层（否则元素的 fill 被盖、玻璃发暗）。 */
+  background-color: var(--bg-0);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.06)),
+    var(--glow-field);
+  background-attachment: fixed; /* 关键：按视口对齐，与真实背景严丝合缝 */
+  background-size: 100vw 100vh;
+  pointer-events: none;
+}
+/* 宿主：建立定位+层叠上下文，并按圆角裁掉折射层外扩的 bleed（消除内圈黑边）。
+   overflow:hidden 不裁 box-shadow，故外投影与 hover 辉光不受影响。 */
+[data-glass],
+.lg-host {
+  isolation: isolate;
+}
+.lg-host {
+  overflow: hidden;
+}
+
+/* ============ 玻璃基类 ============ */
+/* Apple material 精髓：backdrop blur+saturate 让透过的背景更鲜活；极低不透明度
+   冷色填充；顶部 1px 高光描边模拟玻璃边缘折射；外投影给景深、内阴影给厚度。 */
+.glass {
+  position: relative;
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+}
+.glass--strong {
+  background: var(--glass-fill-strong);
+  backdrop-filter: var(--glass-backdrop-strong);
+  -webkit-backdrop-filter: var(--glass-backdrop-strong);
+}
+
+/* 玻璃顶部高光：一道极细的渐隐亮线，是 Apple 玻璃的灵魂细节。
+   用 mask 镂空只留 1px 描边。任何想要玻璃质感的容器都可叠加 .fg-highlight。 */
+.fg-highlight::before,
+.fg-card::before,
+.fg-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, var(--glass-highlight), transparent 28%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+/* ============ 玻璃卡片 ============ */
+.fg-card {
+  position: relative;
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+}
+/* 轻量卡：只填充+高光，不做 backdrop 模糊，用于大批量密集卡片护性能。 */
+.fg-card--flat {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: var(--inset-glass);
+}
+/* 强调卡：左上角渗入一缕蓝，用于「总开关」这类主控卡。 */
+/* 强调卡：左上角渗入【极淡】一缕蓝，用于「总开关」这类主控卡。
+   注意克制：玻璃本体不染蓝（红线），只在边缘渗一点示意「主控」即可，
+   过浓会显廉价。tint 0.05 / border 0.2 是 FairySave 实战调出的克制值。 */
+.fg-card--accent {
+  background: linear-gradient(120deg, rgba(77, 159, 255, 0.05), var(--glass-fill));
+  border-color: rgba(var(--glow-a), 0.2);
+}
+
+/* ============ 贴边长条（顶/底/侧栏） ============ */
+/* 走磨砂不走折射，避免贴视口边缘采到视口外纯深色 → 黑边。 */
+.fg-bar {
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(18px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(18px) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+}
+
+/* ============ 按钮 ============ */
+.fg-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  padding: 0.5em 1.1em;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill-strong);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition:
+    transform var(--dur-quick) var(--ease-out-back),
+    border-color var(--dur-quick) var(--ease-out-quint),
+    background var(--dur-quick) var(--ease-out-quint),
+    box-shadow var(--dur-quick) var(--ease-out-quint),
+    color var(--dur-quick) var(--ease-out-quint);
+}
+.fg-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: rgba(var(--glow-a), 0.55);
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 0 22px rgba(var(--glow-a), 0.2);
+}
+.fg-btn:active {
+  transform: translateY(0) scale(0.95);
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-snap);
+}
+.fg-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+.fg-btn--primary {
+  border-color: rgba(var(--glow-a), 0.5);
+  background: linear-gradient(180deg, rgba(var(--glow-a), 0.32), rgba(var(--glow-c), 0.32));
+  color: var(--accent-bright);
+}
+.fg-btn--danger:hover {
+  border-color: rgba(239, 68, 68, 0.6);
+  background: var(--danger-soft);
+  color: var(--danger);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 0 22px rgba(239, 68, 68, 0.18);
+}
+.fg-btn--ghost {
+  background: transparent;
+}
+.fg-btn--tiny {
+  padding: 0.3em 0.8em;
+  font-size: 0.72rem;
+}
+
+/* ============ 玻璃药丸（动作/标签） ============ */
+.fg-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.65em 1.2em;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(20px) saturate(var(--glass-saturate));
+  box-shadow: var(--inset-glass), 0 2px 10px rgba(0, 0, 0, 0.25);
+  color: var(--fg);
+  font-size: 0.92rem;
+  font-family: var(--font-sans);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--dur-quick) var(--ease-out-back),
+    border-color var(--dur-quick) var(--ease-out-quint),
+    background var(--dur-quick) var(--ease-out-quint),
+    box-shadow var(--dur-quick) var(--ease-out-quint);
+}
+.fg-chip:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: rgba(var(--glow-a), 0.55);
+  background: var(--accent-soft);
+  box-shadow:
+    var(--inset-glass),
+    0 6px 20px rgba(0, 0, 0, 0.3),
+    0 0 22px rgba(var(--glow-a), 0.2);
+}
+.fg-chip:active {
+  transform: translateY(0) scale(0.95);
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-snap);
+}
+.fg-chip.is-active {
+  border-color: var(--accent);
+  color: var(--accent-bright);
+  background: var(--accent-soft);
+}
+
+/* ============ 着陆页主按钮（折射透镜，配 data-glass="button"） ============ */
+.fg-cta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-width: 300px;
+  padding: 2.2rem 3.2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform var(--dur-base) var(--ease-out-quint),
+    box-shadow var(--dur-base) var(--ease-out-quint),
+    border-color var(--dur-base) var(--ease-out-quint);
+}
+.fg-cta:hover {
+  transform: translateY(-3px) scale(1.012);
+  border-color: rgba(var(--glow-a), 0.5);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(var(--glow-a), 0.22),
+    var(--inset-glass);
+}
+.fg-cta:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: var(--dur-quick);
+}
+.fg-cta__main {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #fff, var(--accent-bright));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ============ 开关 ============ */
+/* 玻璃轨道 + 高光滑块 + 开启态蓝色辉光。 */
+.fg-switch {
+  position: relative;
+  width: 48px;
+  height: 27px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.fg-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.fg-switch .fg-slider {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: var(--dur-base) var(--ease-out-quint);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--glass-stroke);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.fg-switch .fg-slider::before {
+  content: "";
+  position: absolute;
+  width: 19px;
+  height: 19px;
+  left: 3px;
+  top: 3px;
+  border-radius: 50%;
+  transition: var(--dur-base) var(--ease-out-quint);
+  background: linear-gradient(180deg, #ffffff, #d6e2f5);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.fg-switch input:checked + .fg-slider {
+  background: linear-gradient(180deg, rgba(var(--glow-a), 0.85), rgba(var(--glow-c), 0.9));
+  border-color: rgba(var(--glow-a), 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 14px rgba(var(--glow-a), 0.5);
+}
+.fg-switch input:checked + .fg-slider::before {
+  transform: translateX(21px);
+  background: linear-gradient(180deg, #ffffff, #eaf2ff);
+}
+
+/* ============ 输入框 / 数字步进框 ============ */
+.fg-input {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 0.85rem;
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius-pill);
+  outline: none;
+  transition: var(--dur-quick) var(--ease-out-quint);
+}
+.fg-input:focus {
+  border-color: rgba(var(--glow-a), 0.6);
+  background: rgba(var(--glow-a), 0.08);
+}
+.fg-input::placeholder {
+  color: var(--fg-dim);
+}
+.fg-num {
+  width: 60px;
+  height: 32px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius-sm);
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  transition: var(--dur-quick) var(--ease-out-quint);
+  /* Firefox：去掉原生上下箭头（否则那对灰色 spinner 紧贴数字，像残留的原始控件）。
+     用自定义加减按钮代替，跨引擎一致。 */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.fg-num:focus {
+  border-color: rgba(var(--glow-a), 0.6);
+  background: rgba(var(--glow-a), 0.1);
+}
+/* Chromium/WebKit：去掉原生上下箭头 */
+.fg-num::-webkit-inner-spin-button,
+.fg-num::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ============ 弹性搜索框 ============ */
+/* 玻璃药丸搜索框，聚焦时宽度【弹一下】展开 + 描边泛蓝 + 一圈淡蓝辉光。
+   宽度过渡用 --ease-spring-back（受控回弹例外，见 tokens.css）；颜色/辉光仍走
+   quint 顺滑，避免颜色也跟着抖。--fg-search-width / --fg-search-width-focus
+   两个变量控制收/展宽度，外部覆写即可（如时间轴的 240→300）。 */
+.fg-search {
+  --fg-search-width: 240px;
+  --fg-search-width-focus: 300px;
+  width: var(--fg-search-width);
+  height: 34px;
+  padding: 0 14px;
+  font-size: 0.85rem;
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius-pill);
+  outline: none;
+  transition: border-color var(--dur-base) var(--ease-out-quint),
+    background var(--dur-base) var(--ease-out-quint),
+    box-shadow var(--dur-base) var(--ease-out-quint),
+    width var(--dur-enter) var(--ease-spring-back);
+}
+.fg-search:focus {
+  width: var(--fg-search-width-focus);
+  border-color: rgba(var(--glow-a), 0.6);
+  background: rgba(var(--glow-a), 0.08);
+  box-shadow: 0 0 0 3px rgba(var(--glow-a), 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.fg-search::placeholder {
+  color: var(--fg-dim);
+}
+
+/* ============ 抽屉（高度可过渡的折叠区域） ============ */
+/* 用法：
+ *   <div class="fg-drawer is-open">      ← 切 is-open 类即可展开/收起
+ *     <div class="fg-drawer__inner">
+ *       ...内容（自然高度，不要写固定 height）...
+ *     </div>
+ *   </div>
+ *
+ * 原理：grid-template-rows 从 0fr 过渡到 1fr。
+ * 之所以选这条路而不是 max-height：max-height 必须写一个偏大的「假上限」，
+ * 内容低时抽屉过早抵达终态，留白时间长；行高高时抽屉又被截。0fr→1fr 让网格
+ * 行的「自然高度」直接参与过渡，无论内容多高都丝滑且无视觉延迟。
+ * 内层负责 overflow:hidden + min-height:0（让网格行真能压到 0）。 */
+.fg-drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-base) var(--ease-out-quint);
+}
+.fg-drawer.is-open {
+  grid-template-rows: 1fr;
+}
+.fg-drawer__inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ============ 侧栏导航项 ============ */
+.fg-nav-item {
+  margin: 2px 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  transition: var(--dur-quick) var(--ease-out-quint);
+}
+.fg-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg);
+}
+.fg-nav-item.is-active {
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+  box-shadow: inset 0 0 0 1px rgba(var(--glow-a), 0.3);
+}
+
+/* ============ 分区标题（带渐隐分隔线） ============ */
+.fg-section-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-bright);
+  margin: 22px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.06em;
+}
+.fg-section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--glass-stroke), transparent);
+}
+
+/* ============ 标语：衬线加粗，蓝白渐变 ============ */
+.fg-slogan {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 2rem;
+  text-align: center;
+  letter-spacing: 0.06em;
+  background: linear-gradient(180deg, #fff, var(--accent-bright));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ============ 弹窗 ============ */
+.fg-modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+}
+.fg-modal {
+  position: relative;
+  width: 440px;
+  max-width: 90%;
+  padding: 24px;
+  border-radius: var(--radius);
+  background: var(--glass-fill-strong);
+  backdrop-filter: var(--glass-backdrop-strong);
+  -webkit-backdrop-filter: var(--glass-backdrop-strong);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+}
+
+/* ============ 浮层提示 toast ============ */
+.fg-toast {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(10px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(10px) saturate(var(--glass-saturate));
+  color: var(--fg);
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  z-index: 200;
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--shadow-glass);
+}
+
+/* ============ 徽章 ============ */
+.fg-badge {
+  font-size: 0.78rem;
+  padding: 0.35em 0.85em;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-stroke);
+  color: var(--fg-muted);
+}
+/* 隐私/状态徽章：玻璃胶囊 + 左侧呼吸绿点示意「正在保护」。
+   独立可用，不依赖 .fg-badge；圆角自带（早期版本漏写过 border-radius 导致方角）。 */
+.fg-badge--privacy {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.4em 0.95em 0.4em 0.85em;
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  color: var(--accent-bright);
+  border-color: rgba(var(--glow-a), 0.32);
+  background: var(--accent-soft);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 12px rgba(var(--glow-a), 0.12),
+    0 2px 10px rgba(0, 0, 0, 0.25);
+  font-weight: 600;
+  overflow: hidden;
+}
+.fg-badge--privacy::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: #34d39a;
+  box-shadow: 0 0 8px rgba(52, 211, 154, 0.9), 0 0 2px rgba(52, 211, 154, 1);
+  animation: fg-pulse 2.4s ease-in-out infinite;
+}
+@keyframes fg-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fg-badge--privacy::after {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
+/* ============================================================
+ *  以下为完整 VIS 补全：应用外壳 / 导航 / 折叠 / 表单 / 反馈 / 数据展示
+ *  —— 设计系统要能独立支撑一个完整界面，这些是上面基础组件之外、
+ *     真实应用必然用到的「第二梯队」组件。全部沿用同一套令牌与红线：
+ *     玻璃中性无色、蓝只来自背后光斑、动效不回弹、不用彩色 emoji。
+ * ============================================================ */
+
+/* ============ 应用外壳（侧栏 + 顶栏 + 主区） ============ */
+/* 真实应用的骨架。关键设计（对齐 FairySave / 剪贴板的实战形态）：
+   侧栏、顶栏、内容区都是【各自独立的圆角玻璃浮块】，块间留 gap，整体四周留
+   padding 浮在背景上 —— 不是贴边、方角、靠 border 分隔的整块。后者会显「原始
+   未加工」。浮块式才是本系统认可的外壳观感。
+   这层外壳还有个副作用好处：内容区是被前层玻璃过滤过的弱光区，里面的卡片观感
+   比 980px 裸列压在视口中心强光上克制得多（这也是「玻璃太艳」问题的真正解法：
+   不动材质，而是把内容放回正常光照层级）。 */
+.fg-app {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  height: 100vh;
+  overflow: hidden;
+}
+/* 侧栏：独立圆角玻璃浮块 */
+.fg-sidebar {
+  width: var(--fg-sidebar-w, 220px);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+  overflow: hidden;
+}
+/* 侧栏品牌区（顶部 logo / 标语位） */
+.fg-sidebar__brand {
+  padding: 18px 18px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* 侧栏导航可滚动区；底部 footer 用 margin-top:auto 压到底 */
+.fg-sidebar__nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.fg-sidebar__foot {
+  margin-top: auto;
+  padding: 16px 18px;
+  font-size: 0.72rem;
+  color: var(--fg-dim);
+}
+/* 主区：纵向排布，顶栏与内容区各自成块，块间留 gap */
+.fg-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  overflow: hidden;
+}
+/* 顶栏：独立圆角玻璃浮块（非贴边长条）。常驻标题 + 右侧操作位 */
+.fg-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 56px;
+  padding: 0 20px;
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+}
+.fg-topbar__title {
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+.fg-topbar__spacer {
+  flex: 1 1 auto;
+}
+/* 内容区：也是一块独立圆角玻璃，且是唯一滚动容器。
+   overflow-y:auto → 折射引擎会自动跳过它（正确，滚动容器不上折射）。 */
+.fg-main__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px clamp(18px, 3vw, 28px) 48px;
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--inset-glass);
+}
+
+/* ============ 折叠手风琴（分类抽屉） ============ */
+/* 剪贴板 .cat-section / 快存 drawer-head 的统一沉淀：点头部展开/收起，
+   body 用 grid 0fr→1fr 过渡（同 .fg-drawer 原理），避免一次铺太多内容。
+   收/展由父级 .is-open 切换。 */
+.fg-accordion {
+  margin-bottom: 0.55rem;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 12px;
+  background: var(--glass-fill);
+  overflow: hidden;
+}
+.fg-accordion__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.7rem 0.95rem;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-quick) var(--ease-out-quint),
+    color var(--dur-quick) ease;
+}
+.fg-accordion__head:hover {
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+}
+/* 雪佛龙箭头：收起指右，展开转下。用 ▸ 字符或 ::after 皆可，这里给类控制。 */
+.fg-accordion__chevron {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  color: var(--fg-dim);
+  transition: transform var(--dur-base) var(--spring),
+    color var(--dur-quick) ease;
+}
+.fg-accordion__name {
+  flex: 1 1 auto;
+}
+/* 数量角标（如「12」），与 fg-badge 同形但更小 */
+.fg-accordion__count {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-dim);
+  padding: 0.1em 0.55em;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill);
+}
+.fg-accordion__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-base) var(--ease-out-quint);
+}
+.fg-accordion__inner {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 0.95rem;
+}
+.fg-accordion.is-open .fg-accordion__chevron {
+  transform: rotate(90deg);
+  color: var(--accent-bright);
+}
+.fg-accordion.is-open .fg-accordion__body {
+  grid-template-rows: 1fr;
+}
+.fg-accordion.is-open .fg-accordion__inner {
+  padding: 0.2rem 0.95rem 0.9rem;
+}
+
+/* ============ 标签页 tabs ============ */
+/* 下边线式。激活项一道蓝下划线滑入，文本提亮。无回弹。 */
+.fg-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--glass-stroke);
+}
+.fg-tab {
+  position: relative;
+  padding: 9px 16px;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  font-family: var(--font-sans);
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: color var(--dur-quick) var(--ease-out-quint);
+}
+.fg-tab::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--dur-base) var(--ease-out-quint);
+}
+.fg-tab:hover {
+  color: var(--fg);
+}
+.fg-tab.is-active {
+  color: var(--accent-bright);
+}
+.fg-tab.is-active::after {
+  transform: scaleX(1);
+}
+
+/* ============ 分段控件 segmented ============ */
+/* 玻璃药盒里 2~4 个互斥选项，激活项一块浮起的玻璃。用于视图/模式切换。 */
+.fg-segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-stroke);
+  background: rgba(255, 255, 255, 0.04);
+}
+.fg-segmented__item {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: color var(--dur-quick) var(--ease-out-quint),
+    background var(--dur-quick) var(--ease-out-quint);
+}
+.fg-segmented__item:hover {
+  color: var(--fg);
+}
+.fg-segmented__item.is-active {
+  color: var(--accent-bright);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px rgba(var(--glow-a), 0.3),
+    0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* ============ 下拉菜单 / 浮层菜单 ============ */
+/* 触发器用 .fg-select（看起来像输入）或任意按钮；菜单本体 .fg-menu 浮层。
+   .fg-menu 是浮空元素，可加 data-glass="card" 上折射（数量少时）。 */
+.fg-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color var(--dur-quick) var(--ease-out-quint),
+    background var(--dur-quick) var(--ease-out-quint);
+}
+.fg-select:hover {
+  border-color: rgba(var(--glow-a), 0.4);
+}
+.fg-select:focus,
+.fg-select.is-open {
+  outline: none;
+  border-color: rgba(var(--glow-a), 0.6);
+  background: rgba(var(--glow-a), 0.08);
+}
+.fg-select__caret {
+  margin-left: auto;
+  font-size: 0.62rem;
+  color: var(--fg-dim);
+}
+.fg-menu {
+  min-width: 180px;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--glass-fill-strong);
+  backdrop-filter: var(--glass-backdrop-strong);
+  -webkit-backdrop-filter: var(--glass-backdrop-strong);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--shadow-glass), var(--inset-glass);
+}
+.fg-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--fg-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background var(--dur-quick) var(--ease-out-quint),
+    color var(--dur-quick) var(--ease-out-quint);
+}
+.fg-menu-item:hover {
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+}
+.fg-menu-item.is-active {
+  color: var(--accent-bright);
+}
+.fg-menu__sep {
+  height: 1px;
+  margin: 5px 8px;
+  background: var(--glass-stroke);
+}
+
+/* ============ 文本域 textarea ============ */
+.fg-textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-stroke);
+  border-radius: var(--radius-sm);
+  outline: none;
+  resize: vertical;
+  transition: border-color var(--dur-quick) var(--ease-out-quint),
+    background var(--dur-quick) var(--ease-out-quint);
+}
+.fg-textarea:focus {
+  border-color: rgba(var(--glow-a), 0.6);
+  background: rgba(var(--glow-a), 0.08);
+}
+.fg-textarea::placeholder {
+  color: var(--fg-dim);
+}
+
+/* ============ 复选框 / 单选框（玻璃自绘） ============ */
+/* 隐藏原生 input，用 label 内的 box 自绘。勾选态泛蓝同开关。 */
+.fg-check,
+.fg-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  color: var(--fg);
+  user-select: none;
+}
+.fg-check input,
+.fg-radio input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.fg-check__box,
+.fg-radio__box {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: background var(--dur-quick) var(--ease-out-quint),
+    border-color var(--dur-quick) var(--ease-out-quint);
+}
+.fg-check__box {
+  border-radius: 5px;
+}
+.fg-radio__box {
+  border-radius: 50%;
+}
+/* 勾：用 ::after 画对勾，勾选时缩放显现 */
+.fg-check__box::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform var(--dur-quick) var(--ease-out-quint);
+}
+.fg-radio__box::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #fff;
+  transform: scale(0);
+  transition: transform var(--dur-quick) var(--ease-out-quint);
+}
+.fg-check input:checked + .fg-check__box,
+.fg-radio input:checked + .fg-radio__box {
+  background: linear-gradient(180deg, rgba(var(--glow-a), 0.85), rgba(var(--glow-c), 0.9));
+  border-color: rgba(var(--glow-a), 0.5);
+  box-shadow: 0 0 10px rgba(var(--glow-a), 0.4);
+}
+.fg-check input:checked + .fg-check__box::after {
+  transform: rotate(45deg) scale(1);
+}
+.fg-radio input:checked + .fg-radio__box::after {
+  transform: scale(1);
+}
+.fg-check input:focus-visible + .fg-check__box,
+.fg-radio input:focus-visible + .fg-radio__box {
+  outline: 2px solid rgba(var(--glow-a), 0.5);
+  outline-offset: 2px;
+}
+
+/* ============ 标签 tag（语义色，比 badge 更小巧、可成组） ============ */
+.fg-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.2em 0.6em;
+  font-size: 0.74rem;
+  border-radius: 6px;
+  border: 1px solid var(--glass-stroke);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg-muted);
+}
+.fg-tag--accent {
+  color: var(--accent-bright);
+  border-color: rgba(var(--glow-a), 0.32);
+  background: var(--accent-soft);
+}
+.fg-tag--ok {
+  color: var(--ok);
+  border-color: rgba(16, 185, 129, 0.35);
+  background: var(--ok-soft);
+}
+.fg-tag--warn {
+  color: var(--warn);
+  border-color: rgba(255, 207, 112, 0.3);
+  background: rgba(255, 207, 112, 0.12);
+}
+.fg-tag--danger {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: var(--danger-soft);
+}
+/* 次要语义紫：仅用于「需与蓝区分」的标记（如插件标），不作主色 */
+.fg-tag--violet {
+  color: var(--violet);
+  border-color: rgba(139, 92, 246, 0.32);
+  background: var(--violet-soft);
+}
+
+/* ============ 提示气泡 tooltip（纯 CSS，hover 触发） ============ */
+.fg-tooltip {
+  position: relative;
+}
+.fg-tooltip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  white-space: nowrap;
+  padding: 6px 10px;
+  font-size: 0.76rem;
+  color: var(--fg);
+  background: var(--glass-fill-strong);
+  backdrop-filter: var(--glass-backdrop-strong);
+  -webkit-backdrop-filter: var(--glass-backdrop-strong);
+  border: 1px solid var(--glass-stroke);
+  border-radius: 8px;
+  box-shadow: var(--shadow-glass);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-quick) var(--ease-out-quint),
+    transform var(--dur-quick) var(--ease-out-quint);
+}
+.fg-tooltip:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ============ 进度条 progress ============ */
+.fg-progress {
+  position: relative;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--glass-stroke);
+  overflow: hidden;
+}
+.fg-progress__bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(var(--glow-c), 0.9), rgba(var(--glow-a), 0.95));
+  box-shadow: 0 0 12px rgba(var(--glow-a), 0.45);
+  transition: width var(--dur-base) var(--ease-out-quint);
+}
+/* 不确定态：一段光带来回扫。背景静止原则不受影响（这是前景小元素，非采样源） */
+.fg-progress--indeterminate .fg-progress__bar {
+  width: 38% !important;
+  animation: fg-progress-slide 1.1s var(--ease-out-quint) infinite;
+}
+@keyframes fg-progress-slide {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(320%); }
+}
+
+/* ============ 加载转圈 spinner ============ */
+.fg-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-top-color: var(--accent);
+  animation: fg-spin 0.7s linear infinite;
+}
+@keyframes fg-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============ 骨架屏 skeleton ============ */
+.fg-skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.05) 30%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.05) 70%
+  );
+  background-size: 220% 100%;
+  animation: fg-skeleton 1.3s ease-in-out infinite;
+}
+@keyframes fg-skeleton {
+  from { background-position: 180% 0; }
+  to { background-position: -40% 0; }
+}
+
+/* ============ 头像 avatar ============ */
+.fg-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  border: 1px solid rgba(var(--glow-a), 0.3);
+  color: var(--accent-bright);
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.fg-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ============ 提示横幅 alert / banner ============ */
+.fg-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  font-size: 0.85rem;
+  color: var(--fg);
+  line-height: 1.6;
+}
+.fg-alert__icon {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+.fg-alert--info {
+  border-color: rgba(var(--glow-a), 0.3);
+  background: var(--accent-soft);
+}
+.fg-alert--info .fg-alert__icon { color: var(--accent-bright); }
+.fg-alert--ok {
+  border-color: rgba(16, 185, 129, 0.32);
+  background: var(--ok-soft);
+}
+.fg-alert--ok .fg-alert__icon { color: var(--ok); }
+.fg-alert--warn {
+  border-color: rgba(255, 207, 112, 0.3);
+  background: rgba(255, 207, 112, 0.1);
+}
+.fg-alert--warn .fg-alert__icon { color: var(--warn); }
+.fg-alert--danger {
+  border-color: rgba(239, 68, 68, 0.32);
+  background: var(--danger-soft);
+}
+.fg-alert--danger .fg-alert__icon { color: var(--danger); }
+
+/* ============ 数据表格 table ============ */
+.fg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.fg-table th,
+.fg-table td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--glass-stroke);
+}
+.fg-table thead th {
+  color: var(--accent-bright);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+.fg-table tbody tr {
+  transition: background var(--dur-quick) var(--ease-out-quint);
+}
+.fg-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.fg-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.fg-table--numeric td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ 列表 list ============ */
+.fg-list {
+  list-style: none;
+}
+.fg-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  color: var(--fg);
+  transition: background var(--dur-quick) var(--ease-out-quint);
+}
+.fg-list-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.fg-list-item__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.fg-list-item__sub {
+  font-size: 0.78rem;
+  color: var(--fg-dim);
+  margin-top: 2px;
+}
+
+/* ============ 面包屑 breadcrumb ============ */
+.fg-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--fg-dim);
+}
+.fg-breadcrumb a {
+  color: var(--fg-muted);
+  text-decoration: none;
+  transition: color var(--dur-quick) var(--ease-out-quint);
+}
+.fg-breadcrumb a:hover {
+  color: var(--accent-bright);
+}
+.fg-breadcrumb__sep {
+  color: var(--fg-dim);
+  opacity: 0.6;
+}
+
+/* ============ 分页 pagination ============ */
+.fg-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.fg-pagination__item {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill);
+  color: var(--fg-muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color var(--dur-quick) var(--ease-out-quint),
+    color var(--dur-quick) var(--ease-out-quint),
+    background var(--dur-quick) var(--ease-out-quint);
+}
+.fg-pagination__item:hover {
+  border-color: rgba(var(--glow-a), 0.4);
+  color: var(--fg);
+}
+.fg-pagination__item.is-active {
+  color: var(--accent-bright);
+  background: var(--accent-soft);
+  border-color: rgba(var(--glow-a), 0.4);
+}
+
+/* ============ 空状态 empty ============ */
+.fg-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--fg-dim);
+}
+.fg-empty__icon {
+  font-size: 2rem;
+  color: var(--fg-dim);
+  opacity: 0.6;
+  margin-bottom: 10px;
+}
+.fg-empty__title {
+  font-size: 0.95rem;
+  color: var(--fg-muted);
+  margin-bottom: 4px;
+}
+
+/* ============ 分隔线 divider ============ */
+.fg-divider {
+  height: 1px;
+  border: none;
+  background: linear-gradient(90deg, transparent, var(--glass-stroke), transparent);
+  margin: 18px 0;
+}
+.fg-divider--vertical {
+  width: 1px;
+  height: auto;
+  align-self: stretch;
+  margin: 0 4px;
+  background: var(--glass-stroke);
+}
+
+/* ============ 键帽 kbd ============ */
+.fg-kbd {
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  padding: 0.15em 0.55em;
+  color: var(--accent-bright);
+  background: var(--accent-soft);
+  border: 1px solid rgba(var(--glow-a), 0.25);
+  border-radius: 7px;
+  box-shadow: inset 0 1px 0 rgba(190, 215, 255, 0.15);
+}
+
+/* ============ 步进器 stepper（数字加减，正式组件化） ============ */
+/* 此前只在 demo 内联拼，现沉淀为组件。加减按钮复用 .fg-btn，数值用 .fg-num。 */
+.fg-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.fg-stepper .fg-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 17px;
+}

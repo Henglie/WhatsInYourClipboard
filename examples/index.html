@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>剪贴板里有什么？· 能识别什么</title>
+<link rel="stylesheet" href="assets/tokens.css" />
+<link rel="stylesheet" href="assets/glass.css" />
+<style>
+  /* —— 仅本示例页用的零碎布局 —— */
+  .ex-hero { text-align: center; padding: 8px 0 4px; }
+  .ex-hero .sub { color: var(--fg-muted); font-size: 0.95rem; margin-top: 8px; line-height: 1.7; }
+  .ex-hero .ver { color: var(--fg-dim); font-size: 0.78rem; margin-top: 10px; letter-spacing: 0.1em; }
+
+  .ex-group { margin-top: 34px; scroll-margin-top: 20px; }
+  .ex-group:first-child { margin-top: 6px; }
+  .ex-group__head { margin-bottom: 14px; }
+  .ex-group__desc { color: var(--fg-dim); font-size: 0.82rem; line-height: 1.7; margin-top: 8px; max-width: 720px; }
+
+  .ex-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  /* 样例卡 */
+  .ex-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+  .ex-card__top { padding: 16px 18px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .ex-card__titlerow { display: flex; align-items: center; gap: 10px; }
+  .ex-card__title { font-weight: 650; font-size: 0.98rem; flex: 1; }
+
+  /* 样例文本块（可复制） */
+  .ex-sample {
+    position: relative;
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-stroke);
+    border-radius: var(--radius-sm);
+    padding: 11px 13px;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--fg);
+    word-break: break-word;
+    white-space: pre-wrap;
+    max-height: 120px;
+    overflow: auto;
+    cursor: pointer;
+    transition: border-color var(--dur-fast) var(--ease-out-quint), background var(--dur-fast) var(--ease-out-quint);
+  }
+  .ex-sample:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .ex-sample.is-mono { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.78rem; }
+  .ex-sample__hint {
+    position: absolute; top: 7px; right: 9px;
+    font-size: 0.66rem; color: var(--fg-dim);
+    opacity: 0; transition: opacity var(--dur-fast) ease;
+    pointer-events: none;
+  }
+  .ex-sample:hover .ex-sample__hint { opacity: 1; }
+  .ex-sample.is-copied { border-color: var(--ok); background: var(--ok-soft); }
+
+  .ex-big { font-size: 1.8rem; text-align: center; padding: 6px 0; }
+  .ex-swatch { height: 30px; border-radius: var(--radius-sm); border: 1px solid var(--glass-stroke); }
+
+  /* 识别结果区 */
+  .ex-card__result {
+    border-top: 1px solid var(--glass-stroke);
+    background: rgba(255,255,255,0.015);
+    padding: 13px 18px 16px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .ex-verdict { display: flex; align-items: baseline; gap: 8px; font-size: 0.9rem; }
+  .ex-verdict__arrow { color: var(--accent-bright); font-size: 0.85rem; }
+  .ex-verdict__text { color: var(--fg); font-weight: 600; }
+  .ex-fields { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 0.8rem; }
+  .ex-fields__k { color: var(--fg-dim); white-space: nowrap; }
+  .ex-fields__v { color: var(--fg-muted); word-break: break-word; }
+
+  .ex-count { color: var(--fg-dim); font-size: 0.78rem; font-weight: 400; margin-left: 8px; }
+
+  /* 敏感内容磨砂玻璃遮罩：打码值再蒙一层无缝磨砂，悬停/点击揭示 */
+  .blur-reveal {
+    position: relative; display: inline-block; border-radius: 6px;
+    cursor: pointer; outline: none; padding: 1px 5px; isolation: isolate;
+    font-family: var(--font-mono, ui-monospace, monospace);
+  }
+  .blur-reveal__text {
+    filter: blur(2.5px); user-select: none;
+    transition: filter var(--dur-quick, 0.22s) var(--ease-out-quint, ease);
+  }
+  .blur-reveal__frost {
+    position: absolute; inset: 0; border-radius: inherit;
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    background: linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), inset 0 0 0 1px var(--glass-stroke);
+    transition: opacity var(--dur-quick, 0.22s) var(--ease-out-quint, ease);
+  }
+  .blur-reveal.is-revealed .blur-reveal__text { filter: none; user-select: text; }
+  .blur-reveal.is-revealed .blur-reveal__frost { opacity: 0; pointer-events: none; }
+  .blur-reveal:focus-visible { box-shadow: 0 0 0 2px var(--accent, #4a9eff); }
+  @media (prefers-reduced-motion: reduce) {
+    .blur-reveal__text, .blur-reveal__frost { transition: none; }
+  }
+
+  /* toast 复制提示 */
+  @media (max-width: 640px) {
+    .ex-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="fg-app">
+
+  <!-- 侧栏：类别导航 -->
+  <aside class="fg-sidebar">
+    <div class="fg-sidebar__brand">
+      <span class="fg-slogan" style="font-size:1.2rem">剪贴板里有什么</span>
+    </div>
+    <nav class="fg-sidebar__nav" id="exNav"></nav>
+    <div class="fg-sidebar__foot">
+      v0.2 · 能识别什么<br>识别在本地 · 零上传
+    </div>
+  </aside>
+
+  <!-- 主区 -->
+  <div class="fg-main">
+    <header class="fg-topbar">
+      <span class="fg-topbar__title">能识别什么</span>
+      <span class="fg-topbar__spacer"></span>
+      <span class="fg-badge--privacy fg-badge">本地处理 · 零上传</span>
+    </header>
+
+    <div class="fg-main__scroll" id="exScroll">
+
+      <div class="ex-hero lg-enter">
+        <div class="sub">
+          下面把「剪贴板里有什么？」能认出的每一类，各举一个真实样例。<br>
+          点任意样例即可复制，回到应用里 Ctrl+V / 长按粘贴，看它怎么认出来。
+        </div>
+        <div class="ver">WHAT IT CAN RECOGNIZE</div>
+      </div>
+
+      <div id="exContent"></div>
+
+    </div>
+  </div>
+</div>
+
+<script src="assets/liquidGlass.js"></script>
+<script type="module">
+  import { GROUPS } from "./data.js";
+
+  const nav = document.getElementById("exNav");
+  const content = document.getElementById("exContent");
+  const scroll = document.getElementById("exScroll");
+
+  // —— 侧栏导航 ——
+  GROUPS.forEach((g, i) => {
+    const item = document.createElement("div");
+    item.className = "fg-nav-item" + (i === 0 ? " is-active" : "");
+    item.dataset.target = g.id;
+    item.textContent = "● " + g.name;
+    nav.appendChild(item);
+  });
+
+  // —— 每个类别一段 ——
+  for (const g of GROUPS) {
+    const section = document.createElement("section");
+    section.className = "ex-group";
+    section.id = g.id;
+
+    const head = document.createElement("div");
+    head.className = "ex-group__head";
+    const title = document.createElement("div");
+    title.className = "fg-section-title";
+    title.innerHTML = g.name + `<span class="ex-count">${g.samples.length} 类</span>`;
+    const desc = document.createElement("p");
+    desc.className = "ex-group__desc";
+    desc.textContent = g.desc;
+    head.append(title, desc);
+    section.appendChild(head);
+
+    const grid = document.createElement("div");
+    grid.className = "ex-grid lg-stagger";
+    for (const s of g.samples) grid.appendChild(buildCard(s));
+    section.appendChild(grid);
+
+    content.appendChild(section);
+  }
+
+  function buildCard(s) {
+    const card = document.createElement("div");
+    card.className = "fg-card ex-card";
+
+    const top = document.createElement("div");
+    top.className = "ex-card__top";
+
+    const titlerow = document.createElement("div");
+    titlerow.className = "ex-card__titlerow";
+    const t = document.createElement("span");
+    t.className = "ex-card__title";
+    t.textContent = s.title;
+    titlerow.appendChild(t);
+    if (s.tag) {
+      const tag = document.createElement("span");
+      tag.className = "fg-tag fg-tag--accent";
+      tag.textContent = s.tag;
+      titlerow.appendChild(tag);
+    } else if (s.drop) {
+      const tag = document.createElement("span");
+      tag.className = "fg-tag";
+      tag.textContent = "拖放";
+      titlerow.appendChild(tag);
+    }
+    top.appendChild(titlerow);
+
+    // 大字 / 色块 / 样例文本
+    if (s.big) {
+      const big = document.createElement("div");
+      big.className = "ex-big";
+      big.textContent = s.big;
+      top.appendChild(big);
+    }
+    if (s.swatch) {
+      const sw = document.createElement("div");
+      sw.className = "ex-swatch";
+      sw.style.background = s.swatch;
+      top.appendChild(sw);
+    }
+
+    const sample = document.createElement("div");
+    sample.className = "ex-sample" + (s.mono ? " is-mono" : "");
+    sample.textContent = s.text;
+    if (!s.drop) {
+      const hint = document.createElement("span");
+      hint.className = "ex-sample__hint";
+      hint.textContent = "点击复制";
+      sample.appendChild(hint);
+      sample.addEventListener("click", () => copy(s.text, sample));
+    } else {
+      sample.style.cursor = "default";
+    }
+    top.appendChild(sample);
+    card.appendChild(top);
+
+    // 识别结果
+    const result = document.createElement("div");
+    result.className = "ex-card__result";
+    const verdict = document.createElement("div");
+    verdict.className = "ex-verdict";
+    verdict.innerHTML =
+      `<span class="ex-verdict__arrow">→</span>` +
+      `<span class="ex-verdict__text">${s.verdict}</span>`;
+    result.appendChild(verdict);
+
+    if (s.fields && s.fields.length) {
+      const fields = document.createElement("div");
+      fields.className = "ex-fields";
+      for (const [k, v] of s.fields) {
+        const kd = document.createElement("span");
+        kd.className = "ex-fields__k";
+        kd.textContent = k;
+        const vd = document.createElement("span");
+        vd.className = "ex-fields__v";
+        // 值若为 { blur } 对象，套一层磨砂玻璃（悬停/点击揭示），演示敏感信息保护
+        if (v && typeof v === "object" && "blur" in v) vd.appendChild(buildBlur(v.blur));
+        else vd.textContent = v;
+        fields.append(kd, vd);
+      }
+      result.appendChild(fields);
+    }
+    card.appendChild(result);
+    return card;
+  }
+
+  // 磨砂玻璃遮罩：打码值再蒙一层无缝磨砂，悬停/点击揭示，移开恢复
+  function buildBlur(text) {
+    const wrap = document.createElement("span");
+    wrap.className = "blur-reveal";
+    wrap.tabIndex = 0;
+    wrap.setAttribute("role", "button");
+    wrap.setAttribute("aria-label", "点击查看被保护的内容");
+    const content = document.createElement("span");
+    content.className = "blur-reveal__text";
+    content.textContent = text;
+    const frost = document.createElement("span");
+    frost.className = "blur-reveal__frost";
+    frost.setAttribute("aria-hidden", "true");
+    wrap.append(content, frost);
+    let stuck = false;
+    wrap.addEventListener("mouseenter", () => wrap.classList.add("is-revealed"));
+    wrap.addEventListener("mouseleave", () => { if (!stuck) wrap.classList.remove("is-revealed"); });
+    wrap.addEventListener("click", () => { stuck = !stuck; wrap.classList.toggle("is-revealed", stuck); });
+    wrap.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); stuck = !stuck; wrap.classList.toggle("is-revealed", stuck); }
+    });
+    return wrap;
+  }
+
+  async function copy(text, el) {
+    try {
+      await navigator.clipboard.writeText(text);
+      el.classList.add("is-copied");
+      const hint = el.querySelector(".ex-sample__hint");
+      const orig = hint ? hint.textContent : "";
+      if (hint) hint.textContent = "已复制 ✓";
+      if (hint) hint.style.opacity = "1";
+      setTimeout(() => {
+        el.classList.remove("is-copied");
+        if (hint) { hint.textContent = orig; hint.style.opacity = ""; }
+      }, 1400);
+    } catch {
+      /* 安全上下文外复制失败，静默 */
+    }
+  }
+
+  // —— 导航点击滚动 + 滚动高亮 ——
+  nav.addEventListener("click", (e) => {
+    const item = e.target.closest(".fg-nav-item");
+    if (!item) return;
+    document.getElementById(item.dataset.target)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  const sections = GROUPS.map((g) => document.getElementById(g.id));
+  const obs = new IntersectionObserver((entries) => {
+    for (const en of entries) {
+      if (en.isIntersecting) {
+        const id = en.target.id;
+        document.querySelectorAll("#exNav .fg-nav-item").forEach((n) =>
+          n.classList.toggle("is-active", n.dataset.target === id)
+        );
+      }
+    }
+  }, { root: scroll, rootMargin: "-10% 0px -80% 0px" });
+  sections.forEach((s) => s && obs.observe(s));
+
+  // 折射（bar/滚动容器自动跳过）
+  if (window.FairyGlass) FairyGlass.hydrateGlass(document);
+</script>
+</body>
+</html>

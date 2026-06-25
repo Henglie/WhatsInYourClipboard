@@ -12,9 +12,9 @@ import {
   renderCode,
 } from "../../views/renderers/highlight.js";
 import { buildInfoCard } from "../../views/renderers/infoCard.js";
+import { blurReveal } from "../../views/renderers/blurReveal.js";
+import { extractUrl, stripLabel } from "../normalize.js";
 import { t } from "../../i18n/i18n.js";
-
-const URL_RE = /^https?:\/\/[^\s]+$/i;
 
 export class TextClassifier extends BaseClassifier {
   static priority = 10;
@@ -26,21 +26,28 @@ export class TextClassifier extends BaseClassifier {
   async parse(item) {
     const text = item.text.trim();
 
-    // 1. URL
-    if (URL_RE.test(text)) {
-      return {
-        actionKey: "text_url",
-        subtitle: t("cls.url"),
-        tplVars: { url: text },
-        render: (el) => {
-          const a = document.createElement("a");
-          a.href = text;
-          a.target = "_blank";
-          a.rel = "noopener noreferrer";
-          a.textContent = text;
-          el.appendChild(a);
-        },
-      };
+    // 1. URL —— 容忍「链接：https://… 。」这类标签前缀与尾部句读：
+    //    先剥字段标签，再抽取首个 URL；若剥掉该 URL 后只剩零星标点/空白，
+    //    判定整串本质就是个链接（而非一段夹了链接的正文）。
+    const labelStripped = stripLabel(text);
+    const ex = extractUrl(labelStripped);
+    if (ex) {
+      const remainder = labelStripped.replace(ex.url, "").replace(/[\s　.,;!?。，、；！？)）」】]/g, "");
+      if (remainder === "") {
+        return {
+          actionKey: "text_url",
+          subtitle: t("cls.url"),
+          tplVars: { url: ex.url },
+          render: (el) => {
+            const a = document.createElement("a");
+            a.href = ex.url;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.textContent = ex.url;
+            el.appendChild(a);
+          },
+        };
+      }
     }
 
     // 2. 敏感信息（只标类型 + 打码，不显明文）
@@ -50,12 +57,16 @@ export class TextClassifier extends BaseClassifier {
         actionKey: "text_sensitive",
         subtitle: t("cls.sensitive"),
         tplVars: {},
+        // 信号：内容敏感。SplitView 据此给左侧 Hex「骨相」整块蒙磨砂，
+        // 否则右侧打了码、左侧 Hex 把原始字节全摊开 = 明文泄露。
+        sensitive: true,
         render: (el) => {
           el.appendChild(
             buildInfoCard(
               sensitive.map((s) => [
                 t(s.type) + (s.count > 1 ? ` ×${s.count}` : ""),
-                s.masked,
+                // 打码值再覆一层模糊玻璃：点击解除、移开恢复，避免旁人扫到
+                blurReveal(s.masked),
               ]),
               {
                 title: t("cardTitle.sensitive"),

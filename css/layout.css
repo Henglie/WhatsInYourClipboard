@@ -499,6 +499,103 @@
   color: var(--fg-muted);
 }
 
+/* 敏感内容遮罩（Telegram spoiler 风格粒子噪点）：底层打码值再蒙一层
+   会「沙沙」闪烁的微蓝噪点，鼠标移上 / 聚焦透出明文，移开 / 失焦立即恢复。 */
+.blur-reveal {
+  position: relative;
+  display: inline-block;
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+  font-family: var(--font-mono);
+  /* 留出一点内边距，噪点层覆盖时不贴着字 */
+  padding: 1px 5px;
+  isolation: isolate;
+}
+.blur-reveal__text {
+  /* 默认轻微虚化文字本体，配合上层噪点形成厚度感 */
+  filter: blur(2.5px);
+  transition: filter var(--dur-quick, 0.22s) var(--ease-out-quint, ease);
+  user-select: none;
+}
+/* TG spoiler 噪点画布：覆盖文字，rAF 逐帧重绘闪烁粒子 */
+.blur-reveal__veil {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  pointer-events: none;
+  /* 噪点之下垫一层薄磨砂，闪烁间隙也读不出底字 */
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  transition: opacity var(--dur-quick, 0.22s) var(--ease-out-quint, ease);
+}
+/* 揭示态：噪点淡出、文字清晰、可选中复制 */
+.blur-reveal.is-revealed .blur-reveal__text {
+  filter: none;
+  user-select: text;
+}
+.blur-reveal.is-revealed .blur-reveal__veil {
+  opacity: 0;
+}
+.blur-reveal:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent, #4a9eff);
+}
+
+/* Hex「骨相」整块噪点遮罩：盖在左栏 .pane__body 之上（top:2rem 以下），
+   自身不随 Hex 内容滚动。鼠标移上 / 聚焦透出原始字节，移开 / 失焦立即恢复。 */
+.hex-mask {
+  position: absolute;
+  top: 2rem; /* 对齐 .pane--hex .pane__body，让出 label */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  /* 纯视觉层：永不拦截指针，底层 Hex 的滚动与字节 hover 联动全程可用。
+     hover 检测挂在 .pane--hex 上（见 frostOverlay），不靠遮罩自身吃事件。 */
+  pointer-events: none;
+  overflow: hidden;
+  /* 水纹之下垫一层薄磨砂，扩散间隙也看不清字节 */
+  -webkit-backdrop-filter: blur(7px) saturate(120%);
+  backdrop-filter: blur(7px) saturate(120%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px var(--glass-stroke);
+  transition: opacity var(--dur-quick, 0.22s) var(--ease-out-quint, ease),
+    -webkit-backdrop-filter var(--dur-quick, 0.22s) var(--ease-out-quint, ease),
+    backdrop-filter var(--dur-quick, 0.22s) var(--ease-out-quint, ease);
+}
+/* TG spoiler 噪点画布：铺满整块遮罩 */
+.hex-mask__veil {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.hex-mask__hint {
+  position: relative; /* 浮在噪点之上 */
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  pointer-events: none;
+  user-select: none;
+}
+/* 揭示态：水纹与磨砂全淡出，露出底层 Hex。遮罩本就 pointer-events:none，
+   hover 检测在外层 .pane--hex 上，故揭示后 Hex 的滚动与字节联动全程可用。 */
+.hex-mask.is-revealed {
+  opacity: 0;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 /* 代码 / JSON 高亮 */
 .code {
   font-family: var(--font-mono);
@@ -516,6 +613,19 @@
 .tok-kw { color: #ff7b9c; font-weight: 600; }
 .tok-comment { color: var(--fg-dim); font-style: italic; }
 .tok-punc { color: var(--fg-muted); }
+
+/* 控制字符显形：\0 等不可打印字符以弱化的可见字形（␀␁␡…）呈现，
+   一眼看出「这里有个空字节」，而非被浏览器吞成零宽不可见。 */
+.ctrl-char {
+  display: inline-block;
+  color: var(--accent-bright, #7aa2ff);
+  background: rgba(122, 162, 255, 0.12);
+  border-radius: 3px;
+  padding: 0 1px;
+  margin: 0 0.5px;
+  opacity: 0.85;
+  font-size: 0.92em;
+}
 
 /* 颜色色板 */
 .color-swatch {
@@ -733,6 +843,20 @@
   font-size: 0.8rem;
   color: var(--fg-dim);
   text-align: center;
+}
+
+/* 音视频本地预览播放器（blob: URL 指向内存字节，零外发） */
+.media-video {
+  width: 100%;
+  max-height: 60vh;
+  border-radius: var(--radius);
+  background: #000;
+  display: block;
+}
+.media-audio {
+  width: 100%;
+  margin: 0.4rem 0 0.2rem;
+  display: block;
 }
 
 /* 主色调调色板 */

@@ -16,6 +16,7 @@ import {
   isISBN,
   validateISBN,
 } from "../life.js";
+import { looksLikePath, parsePath } from "../path.js";
 import { t } from "../../i18n/i18n.js";
 
 // ---------- 收货地址 ----------
@@ -203,6 +204,68 @@ export class ExpressClassifier extends BaseClassifier {
             }
           )
         );
+      },
+    };
+  }
+}
+
+// ---------- 文件系统路径 ----------
+// 剪贴板里复制一条路径很常见（资源管理器地址栏、终端、报错堆栈）。
+// 旧逻辑只当「一段文本」，这里识别并拆出根/层级/文件名/扩展名/类型。
+export class PathClassifier extends BaseClassifier {
+  static priority = 38; // 低于快递(39)，高于纯文本兜底；保守判定避免误吞
+
+  match(item) {
+    return item.isText && looksLikePath(item.text);
+  }
+
+  async parse(item) {
+    const p = parsePath(item.text);
+    const kindLabel = {
+      windows: t("cardRow.pathWindows"),
+      unc: t("cardRow.pathUnc"),
+      unix: t("cardRow.pathUnix"),
+    }[p.kind];
+
+    const rows = [[t("cardRow.pathType"), kindLabel]];
+    if (p.root) rows.push([t("cardRow.pathRoot"), p.root]);
+    if (p.fileName) {
+      rows.push([t("cardRow.pathFileName"), p.fileName]);
+      if (p.ext) {
+        const extKindLabel = p.extKind ? t("cardRow.pathKind_" + p.extKind) : t("cardRow.pathKind_other");
+        rows.push([t("cardRow.pathExt"), "." + p.ext + (p.extKind ? `（${extKindLabel}）` : "")]);
+      }
+    } else if (p.isDir) {
+      rows.push([t("cardRow.pathFileName"), t("cardRow.pathIsDir")]);
+    }
+    rows.push([t("cardRow.pathDepth"), `${p.depth} ${t("cardRow.pathDepthUnit")}`]);
+
+    return {
+      actionKey: "life_path",
+      subtitle: t("cls.path"),
+      tplVars: { path: item.text.trim(), fileName: p.fileName || "" },
+      render: (el) => {
+        el.appendChild(
+          buildInfoCard(rows, { title: t("cardTitle.path"), note: t("cardNote.path") })
+        );
+        // 路径分段「面包屑」可视化
+        if (p.segments.length) {
+          const crumb = document.createElement("div");
+          crumb.className = "path-crumbs";
+          const mk = (txt, cls) => {
+            const span = document.createElement("span");
+            span.className = cls;
+            span.textContent = txt;
+            return span;
+          };
+          if (p.root) crumb.appendChild(mk(p.root, "path-crumbs__root"));
+          p.segments.forEach((seg, i) => {
+            crumb.appendChild(mk(p.sep, "path-crumbs__sep"));
+            const isLast = i === p.segments.length - 1 && !p.isDir;
+            crumb.appendChild(mk(seg, isLast ? "path-crumbs__file" : "path-crumbs__seg"));
+          });
+          el.appendChild(crumb);
+        }
       },
     };
   }

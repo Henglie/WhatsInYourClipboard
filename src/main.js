@@ -7,7 +7,7 @@
  *           → ClassifierFactory.classify → SplitView 渲染
  *           → ActionEngine 渲染「下一步你要…」
  */
-import { readClipboard } from "./clipboard/reader.js";
+import { readClipboard, itemsFromDataTransfer } from "./clipboard/reader.js";
 import { WasmBridge } from "./wasm/bridge.js";
 import { ClassifierFactory } from "./core/ClassifierFactory.js";
 import { renderActions } from "./actions/ActionEngine.js";
@@ -97,6 +97,29 @@ async function handleRead() {
   }
 }
 
+/**
+ * 接收已构造好的 ClipItem[]（来自 paste 事件或文件拖放），走与 handleRead
+ * 相同的后续链路。这是 read()/readText() 之外的进路：
+ *  - 移动端无 Ctrl+V、clipboard.read() 多半缺失，靠长按粘贴触发的 paste 事件。
+ *  - 桌面拖入 .exe/图片等文件才有真实字节（复制文件进剪贴板只有路径）。
+ */
+async function ingestItems(items) {
+  if (current === STATE.READING) return;
+  if (!items || !items.length) return;
+  current = STATE.READING;
+  shell.setStatus({ state: t("status.reading") });
+  try {
+    await WasmBridge.ready();
+    const item = items[0];
+    currentClipboardItem = item;
+    await handleReadWithItem(item);
+  } catch (err) {
+    console.error(err);
+    current = STATE.EMPTY;
+    shell.setStatus({ state: t("status.idle") });
+  }
+}
+
 /** 处理已读取的剪贴板项（语言切换时复用） */
 async function handleReadWithItem(item) {
   try {
@@ -133,7 +156,11 @@ async function handleReadWithItem(item) {
       subtitle: candidates[0].result.subtitle,
       bytes: item.bytes,
       candidates,
-      onSwitch: (i) => showCandidate(view, candidates[i].result, item.isText ? item.text : null),
+      sensitive: !!candidates[0].result.sensitive,
+      onSwitch: (i) => {
+        view.setHexMask(!!candidates[i].result.sensitive);
+        showCandidate(view, candidates[i].result, item.isText ? item.text : null);
+      },
       onReset: showLanding,
     });
 
@@ -164,6 +191,34 @@ window.addEventListener("keydown", (e) => {
       handleRead();
     }
   }
+});
+
+// paste 事件：移动端「长按粘贴」与桌面 Ctrl+V 的通用进路。
+// clipboard.read() 在移动端/部分浏览器缺失或需权限，而 paste 事件的
+// clipboardData 几乎全平台可用、且无需读权限。监听 document 以捕获任意焦点下的粘贴。
+document.addEventListener("paste", (e) => {
+  if (current !== STATE.EMPTY) return;
+  const dt = e.clipboardData;
+  if (!dt) return;
+  e.preventDefault();
+  itemsFromDataTransfer(dt).then(ingestItems);
+});
+
+// 文件拖放：复制文件进系统剪贴板时只有路径而非内容，clipboard.read()
+// 永远拿不到 .exe/图片等的字节；拖放是获取真实二进制字节的唯一可靠进路。
+// 页面任意处可拖放（隐形入口，不改着陆页外观）。
+window.addEventListener("dragover", (e) => {
+  if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files")) {
+    e.preventDefault(); // 允许 drop
+  }
+});
+window.addEventListener("drop", (e) => {
+  if (!e.dataTransfer) return;
+  const hasFiles = Array.from(e.dataTransfer.types || []).includes("Files");
+  if (!hasFiles) return;
+  e.preventDefault();
+  if (current !== STATE.EMPTY) showLanding(); // 已在结果页时先复位，再吃新文件
+  itemsFromDataTransfer(e.dataTransfer).then(ingestItems);
 });
 
 // 语言切换：重建外壳与当前视图（外壳含语言钮，必须重建）。

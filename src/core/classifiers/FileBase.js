@@ -35,23 +35,33 @@ export class FileClassifier extends BaseClassifier {
     if (type === CB_TYPE.PE) {
       const pe = WasmBridge.parsePE(item.bytes) || {};
       const archDisplay = pe.arch ? t(pe.arch) : t("cardRow.unknown");
+      // 默认文件名按 PE 类型选 .dll / .exe；有真实文件名（拖放/选择）则用真实名
+      const defaultName = pe.kind === "DLL" ? "library.dll" : "program.exe";
       return {
         actionKey: "file_exe",
         subtitle: t("cls.pe"),
-        tplVars: { fileName: item.meta.fileName || "program.exe", arch: archDisplay },
+        tplVars: { fileName: item.meta.fileName || defaultName, arch: archDisplay },
         render: (el) => {
+          const rows = [
+            [t("cardRow.mediaFormat"), "PE（Portable Executable）"],
+            [t("cardRow.fileArchitecture"), archDisplay],
+          ];
+          if (pe.kind) rows.push([t("cardRow.fileKind"), pe.kind]);
+          if (pe.sections != null) rows.push([t("cardRow.fileSections"), String(pe.sections)]);
+          if (pe.timestamp) {
+            const d = new Date(pe.timestamp * 1000);
+            // 时间戳为 0 或异常（1970/2100 外）时不显示，避免误导
+            const y = d.getFullYear();
+            if (y >= 1990 && y <= 2099) {
+              rows.push([t("cardRow.fileTimestamp"), d.toISOString().slice(0, 19).replace("T", " ")]);
+            }
+          }
+          rows.push([t("cardRow.mediaSize"), fmtSize(item.size)]);
           el.appendChild(
-            buildInfoCard(
-              [
-                [t("cardRow.mediaFormat"), "PE（Portable Executable）"],
-                [t("cardRow.fileArchitecture"), archDisplay],
-                [t("cardRow.mediaSize"), fmtSize(item.size)],
-              ],
-              {
-                title: t("cardTitle.pe"),
-                note: t("cardNote.pe"),
-              }
-            )
+            buildInfoCard(rows, {
+              title: t("cardTitle.pe"),
+              note: t("cardNote.pe"),
+            })
           );
           buildHashPanel(el, item.bytes);
         },

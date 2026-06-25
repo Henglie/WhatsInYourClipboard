@@ -184,17 +184,40 @@ export const WasmBridge = {
       });
       if (!json) return null;
       try {
-        return JSON.parse(json);
+        const pe = JSON.parse(json);
+        // WASM 侧 arch 是中文字面量；归一成 i18n 键，与 JS 回退路径一致，
+        // 否则英文模式下会原样显示中文。无对应键的（如 0x.. 原始值）保留。
+        const archKeyMap = {
+          "x86 (32位)": "cardRow.archX86",
+          "x64 (64位)": "cardRow.archX64",
+          ARM64: "cardRow.archARM64",
+          ARM: "cardRow.archARM",
+          未知: "cardRow.unknown",
+        };
+        if (pe.arch && archKeyMap[pe.arch]) pe.arch = archKeyMap[pe.arch];
+        return pe;
       } catch {
         return null;
       }
     }
     if (!startsWith(u8, [0x4d, 0x5a])) return null;
     // e_lfanew @ 0x3C → PE header 偏移
+    if (u8.length < 0x40) return null;
     const peOff = u8[0x3c] | (u8[0x3d] << 8) | (u8[0x3e] << 16) | (u8[0x3f] << 24);
+    // 越界保护：PE 头需至少 24 字节（COFF 头 + Characteristics）
+    if (peOff + 24 > u8.length) return { arch: "cardRow.unknown" };
     if (u8[peOff] !== 0x50 || u8[peOff + 1] !== 0x45) return { arch: "cardRow.unknown" };
     const machine = u8[peOff + 4] | (u8[peOff + 5] << 8);
-    const archMap = { 0x014c: "cardRow.archX86", 0x8664: "cardRow.archX64", 0xaa64: "cardRow.archARM64" };
-    return { arch: archMap[machine] || `0x${machine.toString(16)}` };
+    const archMap = { 0x014c: "cardRow.archX86", 0x8664: "cardRow.archX64", 0xaa64: "cardRow.archARM64", 0x01c0: "cardRow.archARM" };
+    const sections = u8[peOff + 6] | (u8[peOff + 7] << 8);
+    const timestamp =
+      (u8[peOff + 8] | (u8[peOff + 9] << 8) | (u8[peOff + 10] << 16) | (u8[peOff + 11] << 24)) >>> 0;
+    const chars = u8[peOff + 22] | (u8[peOff + 23] << 8);
+    return {
+      arch: archMap[machine] || `0x${machine.toString(16)}`,
+      kind: chars & 0x2000 ? "DLL" : "EXE",
+      sections,
+      timestamp,
+    };
   },
 };

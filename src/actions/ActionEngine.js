@@ -8,6 +8,7 @@
  *   decode — 本地解码（按 codec 解码 {{raw}}，就地显示结果，不联网不跳转）
  */
 import { tryDecode, CODECS } from "../core/codec.js";
+import { renderVisibleText } from "../views/renderers/visibleText.js";
 import { t } from "../i18n/i18n.js";
 
 let _config = null;
@@ -95,8 +96,13 @@ export async function renderActions(listEl, actionKey, tplVars = {}) {
         title.textContent = `${codecLabel} ${t("action.decodeResult")}`;
         const pre = document.createElement("pre");
         pre.className = "code";
-        pre.textContent = r.ok ? r.result : `${t("action.decodeFailed")}${r.error}`;
-        if (!r.ok) pre.classList.add("decode-result__error");
+        if (r.ok) {
+          // 解码结果可能含 \0 等不可打印字符，渲染成可见字形而非被浏览器吞掉
+          renderVisibleText(pre, String(r.result));
+        } else {
+          pre.textContent = `${t("action.decodeFailed")}${r.error}`;
+          pre.classList.add("decode-result__error");
+        }
         box.append(title, pre);
         listEl.querySelectorAll(".action-chip").forEach((c) => c.classList.remove("copied"));
         btn.classList.add("copied");

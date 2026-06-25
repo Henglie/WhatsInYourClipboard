@@ -3,7 +3,7 @@
  * 注册所有分类器，按 priority 降序做瀑布流判定，返回首个命中者的解析结果。
  */
 import { TextClassifier } from "./classifiers/TextBase.js";
-import { MediaClassifier, SvgClassifier } from "./classifiers/MediaBase.js";
+import { MediaClassifier, SvgClassifier, AudioVideoClassifier } from "./classifiers/MediaBase.js";
 import { FileClassifier } from "./classifiers/FileBase.js";
 import { EncodedScriptClassifier } from "./classifiers/EncodedScript.js";
 import {
@@ -27,6 +27,8 @@ import {
   PhoneClassifier,
   BankCardClassifier,
   IpClassifier,
+  Ipv6Classifier,
+  MacClassifier,
   PlateClassifier,
 } from "./classifiers/identity.js";
 import {
@@ -47,6 +49,7 @@ import {
   MathClassifier,
   IsbnClassifier,
   ExpressClassifier,
+  PathClassifier,
 } from "./classifiers/lifeView.js";
 import {
   CipaiClassifier,
@@ -78,6 +81,8 @@ const REGISTRY = [
   PhoneClassifier,
   BankCardClassifier,
   IpClassifier,
+  Ipv6Classifier,
+  MacClassifier,
   PlateClassifier,
   // 高特异性令牌/数值
   JwtClassifier,
@@ -108,12 +113,14 @@ const REGISTRY = [
   BarcodeClassifier,
   AddressClassifier,
   ExpressClassifier,
+  PathClassifier,
   // 垂直领域（分享码注册表）
   ShareCodeClassifier,
   DeltaCodeClassifier,
   // 既有
   MediaClassifier,
   SvgClassifier,
+  AudioVideoClassifier,
   FileClassifier,
   ExtendedFileClassifier,
   EncodedScriptClassifier,

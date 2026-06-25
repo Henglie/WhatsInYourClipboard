@@ -1,0 +1,262 @@
+/* ============================================================
+ *  FairyGlass · tokens.css
+ *  设计令牌层：颜色 / 字体 / 玻璃材质 / 动效 / 背景 / 滚动条 / 入场动画
+ *  ------------------------------------------------------------
+ *  这是整套视觉系统的「单一事实来源」。任何项目接入只需引入本文件 +
+ *  glass.css，即可获得统一的微蓝暗色液态玻璃外观。
+ *
+ *  设计基调（不可漂移）：
+ *   - 微蓝暗色底，绝不用纯黑、绝不用紫。
+ *   - 玻璃是中性无色的（白色极低不透明度填充），蓝色只来自背后光斑被折射。
+ *   - 动效高初速、果断、迅速滑停，干净利落【不回弹】。
+ *   - 不用彩色 emoji；保留 ● ✓ ← ▼ 等黑白几何符号。
+ * ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* ---------- 字体 ---------- */
+  /* 衬线：标题/标语，给「优雅」的人文气。CJK 排在前，西文兜底。 */
+  --font-serif: "Noto Serif SC", "Songti SC", Georgia, "Times New Roman", serif;
+  /* 无衬线：正文/界面。 */
+  --font-sans: -apple-system, "SF Pro Display", "Inter", "PingFang SC",
+    "Microsoft YaHei", system-ui, sans-serif;
+  /* 等宽：代码/数字/快捷键。CJK sans 须排在 monospace【之前】，否则 Windows
+     会把 CJK 兜底成宋体衬线，造成中文衬线 bug。 */
+  --font-mono: "SF Mono", "JetBrains Mono", "Cascadia Code", "Consolas",
+    "PingFang SC", "Microsoft YaHei", monospace, sans-serif;
+
+  /* ---------- 微蓝暗色底色 ---------- */
+  /* 背景不是纯黑，而是带蓝的深邃夜色，玻璃浮其上才有磨砂对比。 */
+  --bg-0: #070b14; /* 最底 */
+  --bg-1: #0b1120; /* 主背景 */
+  --bg-2: #0f1626; /* 抬升面 */
+
+  /* ---------- 光斑（微蓝 / 青蓝，绝不用紫） ---------- */
+  --glow-a: 56, 132, 255; /* 蓝 */
+  --glow-b: 38, 198, 218; /* 青 */
+  --glow-c: 30, 86, 180; /* 深蓝 */
+
+  /* ---------- 文字 ---------- */
+  --fg: #eaf0fb;
+  --fg-muted: #93a1bd;
+  --fg-dim: #5d6b87;
+
+  /* ---------- 强调色：天蓝，非紫 ---------- */
+  --accent: #4d9fff;
+  --accent-bright: #7cc0ff;
+  --accent-soft: rgba(77, 159, 255, 0.14);
+
+  /* ---------- 语义色（状态反馈，克制使用） ---------- */
+  --ok: #6ee7b7;
+  --ok-soft: rgba(16, 185, 129, 0.15);
+  --warn: #ffcf70;
+  --danger: #ff9a9a;
+  --danger-soft: rgba(239, 68, 68, 0.15);
+  /* 第二类强调（插件/紫调标签等需要与蓝区分的次要语义） */
+  --violet: #c4b5fd;
+  --violet-soft: rgba(139, 92, 246, 0.15);
+
+  /* ---------- 液态玻璃材质 ---------- */
+  /* 透明玻璃：中性无色，不染色相。蓝色只来自背后透出的背景光斑被折射。 */
+  --glass-fill: rgba(255, 255, 255, 0.05);
+  --glass-fill-strong: rgba(255, 255, 255, 0.09);
+  --glass-blur: 8px; /* 基座薄磨砂；玻璃的「液态」质感来自折射层 */
+  --glass-saturate: 180%;
+  --glass-backdrop: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  --glass-backdrop-strong: blur(14px) saturate(var(--glass-saturate));
+
+  /* 背景光斑场：body 底层与每块玻璃的折射层共用同一份。
+     折射层用 background-attachment:fixed 把它按视口对齐，于是「透过玻璃看到的
+     光斑」和真实背景严丝合缝，只在边缘被 SVG 位移滤镜弯曲 → 真实玻璃透镜效果，
+     且 filter:url() 全浏览器（含 Firefox）通用，三系引擎跑同一份代码。 */
+  --glow-field:
+    radial-gradient(38% 46% at 22% 26%, rgba(var(--glow-a), 0.30), transparent 70%),
+    radial-gradient(42% 50% at 78% 32%, rgba(var(--glow-b), 0.20), transparent 70%),
+    radial-gradient(46% 54% at 60% 50%, rgba(var(--glow-c), 0.18), transparent 72%),
+    radial-gradient(50% 58% at 40% 88%, rgba(var(--glow-a), 0.16), transparent 72%);
+
+  /* 玻璃边框：中性白高光 + 整体细描边 */
+  --glass-stroke: rgba(255, 255, 255, 0.16);
+  --glass-highlight: rgba(255, 255, 255, 0.5);
+
+  /* 阴影：外投影给景深，内高光给厚度 */
+  --shadow-glass:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+  --inset-glass:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+
+  /* ---------- 圆角 ---------- */
+  --radius-sm: 9px;
+  --radius: 18px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  /* ---------- 动效令牌（液态玻璃 · 轻盈有力）----------
+     原则：高初速、果断、迅速滑停，干净利落【不回弹】。
+     只动 transform/opacity（GPU 合成，不卡）。
+     玻璃的「有力」来自陡峭的起步与快速落定，而非弹簧过冲。 */
+  --dur-instant: 0.1s;
+  --dur-fast: 0.13s; /* 按下/即时反馈 */
+  --dur-quick: 0.18s; /* 悬停 */
+  --dur-base: 0.26s; /* 一般状态切换 / 抽屉展开 / 语言切换 */
+  --dur-enter: 0.36s; /* 入场 */
+  /* glide：高初速 → 迅速滑停，无任何过冲。玻璃滑动的核心手感。 */
+  --spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-back: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  /* snap：按下瞬间果断塌陷 */
+  --ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
+  /* 例外曲线：弹性微交互专用（如搜索框聚焦展宽）。
+     y > 1 段会真正过冲一下再回落 → 视觉上「弹」一下。
+     这是「动效不回弹」红线下的【受控例外】，仅给主动要求弹性的微交互用，
+     不要污染主操作（按钮/卡片/抽屉/入场），否则整体手感会变松。 */
+  --ease-spring-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============ 基础排版 ============ */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--fg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background: var(--bg-1);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* 背景景深层：微蓝光斑，作为玻璃的采样源。
+   关键：保持【静止】。一旦这层动，它是所有 backdrop-filter 的采样源，
+   会逼着每块玻璃每帧重新采样+重新模糊 → Chromium 持续掉帧。
+   静止后玻璃只在自身变化（hover/滚动）时局部重绘，空闲与悬停都顺滑。 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--glow-field), var(--bg-0);
+  filter: saturate(120%);
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+}
+
+/* ============ 滚动条：玻璃风，跨引擎统一 ============ */
+/* Firefox 用 scrollbar-width/color；Chromium/WebKit 用 ::-webkit-scrollbar。
+   半透明细条 + padding-box 内缩，避免实心轨道压住玻璃。 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ============ 共享入场动效 ============ */
+/* 弹簧上浮：略微放大 + 上移 + 淡入。
+   终态必须是 transform:none（而非 scale(1)）：否则 fill:both 残留的 transform
+   会建立包含块，永久破坏内部折射层的 background-attachment:fixed 对齐。 */
+@keyframes lg-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* 弹出：缩放为主，用于药丸/小控件，更跳脱 */
+@keyframes lg-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* 纯淡入：用于本身含交错子项的容器，避免父级 transform 与子项动画打架，
+   也避免长动画期间拖动内部折射层 */
+@keyframes lg-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 工具类：渲染后给容器加 .lg-enter / .lg-enter-pop / .lg-fade 即触发。 */
+.lg-enter {
+  animation: lg-rise var(--dur-base) var(--ease-out-quint) both;
+}
+.lg-enter-pop {
+  animation: lg-pop var(--dur-base) var(--ease-out-quint) both;
+}
+.lg-fade {
+  animation: lg-fade var(--dur-base) var(--ease-out-quint) both;
+}
+/* 列表错峰：子项依次入场，营造「流」的节奏（前 8 项足够，其余共用末档） */
+.lg-stagger > * {
+  animation: lg-pop var(--dur-base) var(--ease-out-quint) both;
+}
+.lg-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.lg-stagger > *:nth-child(2) { animation-delay: 0.05s; }
+.lg-stagger > *:nth-child(3) { animation-delay: 0.08s; }
+.lg-stagger > *:nth-child(4) { animation-delay: 0.11s; }
+.lg-stagger > *:nth-child(5) { animation-delay: 0.14s; }
+.lg-stagger > *:nth-child(6) { animation-delay: 0.17s; }
+.lg-stagger > *:nth-child(7) { animation-delay: 0.20s; }
+.lg-stagger > *:nth-child(n + 8) { animation-delay: 0.23s; }
+
+/* 无障碍：尊重「减弱动态效果」，关掉入场/位移/缩放动画，保留极短的颜色/透明度
+   反馈（hover/选中的视觉反馈仍需要，否则界面失去响应感）。 */
+@media (prefers-reduced-motion: reduce) {
+  .lg-enter,
+  .lg-enter-pop,
+  .lg-fade,
+  .lg-stagger > * {
+    animation: none !important;
+  }
+}

@@ -4,7 +4,8 @@
  */
 
 /**
- * @param {Array<[string, string]>} rows  [label, value] 键值对
+ * @param {Array<[string, (string|Node)]>} rows  [label, value] 键值对；
+ *        value 可为字符串（按文本插入）或 DOM 节点（直接挂入，用于打码模糊层等）
  * @param {object} [opts]
  * @param {string} [opts.title]   卡片标题
  * @param {string} [opts.note]    底部补充说明
@@ -27,7 +28,8 @@ export function buildInfoCard(rows, opts = {}) {
     const dt = document.createElement("dt");
     dt.textContent = label;
     const dd = document.createElement("dd");
-    dd.textContent = value;
+    if (value instanceof Node) dd.appendChild(value);
+    else dd.textContent = value;
     dl.append(dt, dd);
   }
   wrap.appendChild(dl);

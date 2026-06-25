@@ -16,6 +16,7 @@ import { CODECS, tryDecode, tryEncode } from "../core/codec.js";
 import { CIPHERS, tryCipher, tryCipherEncode } from "../core/ciphers.js";
 import { applyLiquidGlass } from "../ui/liquidGlass.js";
 import { createStepper } from "../ui/stepper.js";
+import { renderVisibleText } from "./renderers/visibleText.js";
 import { t } from "../i18n/i18n.js";
 
 export function renderToolMenu(container, raw) {
@@ -82,7 +83,9 @@ export function renderToolMenu(container, raw) {
     const pre = document.createElement("pre");
     pre.className = "code";
     if (r.ok && r.result && String(r.result).trim()) {
-      pre.textContent = r.result;
+      // 解码结果可能含 \0 等不可打印字符（剪贴板透视的价值正在于显形它们），
+      // 用 renderVisibleText 把控制字符渲染成可见字形，避免被浏览器吞掉。
+      renderVisibleText(pre, String(r.result));
     } else {
       pre.textContent = r.ok
         ? t("toolbox.emptyResult")

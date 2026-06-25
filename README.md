@@ -42,6 +42,7 @@ Everything runs locally inside the browser sandbox — **not a single byte is up
 | 层 / Layer | 技术 / Technology |
 | --- | --- |
 | 表现层 / UI | HTML5 + 现代 CSS3（统一液态玻璃：`filter:url()` SVG 折射 + 物理化交互动效，全引擎一致） |
+| 视觉系统 / VIS | [FairyGlass](https://github.com/Henglie/FairyGlass) 微蓝暗色液态玻璃设计系统（本项目 `css/` 即其母本） |
 | 逻辑层 / Logic | 原生 JavaScript（ES6+ 模块化） |
 | 计算层 / Core | WebAssembly（C 编译，经 emscripten） |
 
