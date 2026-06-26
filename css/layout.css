@@ -930,6 +930,15 @@
 .decode-result__error {
   color: #ff9bb0;
 }
+/* 二维码画布：白底留白圆角居中，保证扫码对比度（深色玻璃背景下黑模块需白底承托） */
+.qr-canvas {
+  display: block;
+  margin: 0.6rem auto 0;
+  padding: 12px;
+  background: #fff;
+  border-radius: 10px;
+  image-rendering: pixelated;
+}
 
 /* 解码工具箱二级菜单 */
 .toolbox {

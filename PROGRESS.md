@@ -1,7 +1,7 @@
 # PROGRESS · WhatsInYourClipboard（剪贴板里有什么？）
 
 > 项目进度与 AI 接管文档。**人看的介绍在 [README.md](./README.md)，本文件只给接手的 AI / 开发者。**
-> 最后更新：2026-06-23
+> 最后更新：2026-06-24
 
 ---
 
@@ -90,6 +90,8 @@ WhatsInYourClipboard/
 - **`prefers-reduced-motion` 别关停功能性动画**：遮罩动画（现为液态水纹）是「这是受保护内容」的核心视觉信号，不是装饰。曾用该偏好整段关掉 rAF，结果 Windows 11 默认开启此设置的机器上动画全静止（作者反馈「没有动画」）。功能性动画要恒动，该偏好只该弱化纯装饰过渡。
 - **CDP headless 默认 `prefers-reduced-motion: reduce`**：用 chrome-headless-shell 验证动画时，不显式 `Emulation.setEmulatedMedia({features:[{name:'prefers-reduced-motion',value:'no-preference'}]})` 就采不到动画帧，会误判「粒子没动」。
 - **MP4 tkhd 宽高偏移**：宽高是 tkhd payload（version+flags 之后）末尾两个 16.16 定点数，v0 在 payload 偏移 76、v1 在 88（即 box 头后再 +76/+88）。曾多算 8 字节取不到分辨率。
+- **【最高优先】本会话工具链严重不可靠，必须用绝对路径 + 同进程读回**：根因疑为 `cd 中文路径` 后 cwd 被重置，导致相对路径的读/写落到错误位置；Edit/Write 多次报“成功”但磁盘未变，grep/bash/CDP 回显是旧值或别处文件，甚至启了 serving 旧目录的僵尸 http 服务器，据此一度误判“已提交/已完成”（实际 git 历史只到 `985b0af`，我汇报的多个 commit 根本不存在）。**铁律：①一切文件操作用绝对路径，不用 `cd`、不用相对路径；②改完立刻在同一条 node 命令里用绝对路径读回比对；③验证服务器先 curl 确认返回的就是磁盘最新内容；④git 状态以 `git -C <绝对路径> log/status` 为准。**
+- **工具回显偶发错乱（接手务必知道）**：本会话多次出现 Edit 报“成功”但实际没落盘、grep/bash 回显与磁盘不符、CDP 输出是旧值的情况，一度据此误判“已完成”。**唯一可信的真相源是 `node -e` 直接读文件**；改完关键文件（尤其 JSON/i18n）后用 node 读回确认，别信工具的成功回显。
 - **覆盖层遮罩别拦截底层指针**：Hex 整块遮罩 `.hex-mask`（`z-index:2`）曾绑自身 hover 揭示、且为防闪烁让揭示态也吃指针，结果它永久拦截底层 Hex 的滚动与字节 hover 联动（作者反馈「没法互动 hex 面板」）。正解：覆盖层恒 `pointer-events:none`（纯视觉层），hover 检测改挂外部宿主（`.pane--hex` 的 mouseenter/leave + focusin/out），遮罩从不吃事件，底层全程可交互。
 
 ---
@@ -127,12 +129,19 @@ bash wasm/build.sh            # 重编 WASM
 - [x] **Hex 遮罩不挡交互修复（2026-06-24，作者反馈「没法互动 Hex 面板」）**：根因——`hex-mask` 遮罩 `z-index:2` 且曾为防 mouseleave 闪烁刻意「揭示态也捕获指针」，结果永久拦截左栏 Hex 的滚动与字节 hover 联动。改为遮罩**恒 `pointer-events:none`**（纯视觉层），hover/聚焦检测改挂宿主 `.pane--hex`（`frostOverlay({host})`，mouseenter/leave + focusin/out）。这样 Hex 全程可滚动可联动，移上 pane 遮罩淡出露字节。CDP 验证：`pe=none` + hover 联动可用 + 可滚动 + 移上揭示/移开恢复 + 零错误。
 - [x] **坐标识别放宽 + 图片深挖（2026-06-24）**：① `life.js` parseCoord 重写——容忍空格分隔（`39.9 116.4`）、方向前后缀（`N39.9 E116.4`）、度分秒 DMS（`39°54'30"N 116°23'30"E`），并收紧误报（纯整数对/单数字不再误判成坐标：要么带逗号/小数点/方向/度符号才认）；15 项 node 自测全过。② `imageInfo.js` 新增 `readImageDetail`——PNG 位深/色彩类型/透明/隔行/APNG 帧数、GIF 帧数+动图+透明、WebP 模式(有损/无损/扩展)+alpha+动画、JPEG 精度/分量(YCbCr/CMYK)/渐进；色彩类型/模式返回 i18n key（技术术语英文模式可译），MediaBase 图片卡补这些行。10 项 node 自测全过。
 - [x] **示例展示页（2026-06-23，进行中收尾）**：`examples/index.html` + `examples/data.js` + `examples/assets/`（FairyGlass 母本 tokens/glass/liquidGlass 拷贝）。按 7 大类侧栏导航，每类每种可识别类型举一个真实样例（身份证/银行卡/ISBN/EAN13 都是带正确校验位的真数据），点样例即复制。敏感信息卡已演示磨砂遮罩。用 Playwright 截图迭代过外观。
+- [x] **「下一步做什么」第一层落地（2026-06-24）**：actions.json 补齐 `media_audio`(复制曲名/搜网易云/复制时长)、`media_video`(复制分辨率/时长)、`id_mac`(查 OUI 厂商 macvendors/复制)、`id_ipv6`(ipinfo+ip138)、`life_path`(复制路径/文件名/父目录/explorer 命令)、`struct_csv`(复制为 Markdown 表格/原文)、`struct_ua`(在线解析/复制)、`id_plate`(复制号牌)、`file_pem`(复制完整 PEM) 共 62 个 actionKey；对应分类器补 tplVars（音视频 songQuery/dims/duration、path parent/winExplorer、csv markdown、ua、pem）；新增 14 个 actionLabel i18n 键（中英镜像）。隐私铁律照旧：id_card/id_phone/id_bankcard 仍空。CDP 真实浏览器验证 MAC/IPv6/路径/CSV/音频/PEM 动作全部正确渲染+插值无误+零错误。注：file_extended 的 hash 动作留给第三层动态注入（hash 异步算），暂空。
 
 ## ▍待办
 
 - [ ] **P1 本地测试验证**：逐个分类器渲染正常、英文翻译准确（启服务器人工过一遍）。
 
-- [ ] **P2 「下一步做什么」动作引擎广度扩展（重点策划，接手主攻方向）**
+- [~] **P2 「下一步做什么」动作引擎广度扩展（第一、二层 ✓ 完成；第三、四层待办）**
+
+> **【进度 · 2026-06-26】** 第一、二层均**已完成并 CDP 真机验证通过**（详见下方两层的「已完成」块）。
+> 接手第二层时补完了交接缺口（main.js 透传 ctx、`.qr-canvas` 样式）并修了 `renderQRCanvas` 签名 bug。
+> 下一步可开工**第三层（上下文感知动态动作 dynamicActions）**与**第四层（动作分组）**，方案见本节末。
+> **铁律仍然有效**：本仓库改完任何文件用 `node` 以**绝对路径**读回确认，别信 Edit/Write/grep 的成功回显；起服务器先杀旧 python 进程，确认端口返回的是新内容（本会话仍多次见 cwd 漂移）。
+
 
   > 目标：识别只是上半场，「认出来之后能顺手做点什么」才是这个娱乐网页的爽点。当前动作面偏薄——动作类型只有 `link`/`copy` 两种，本轮新增的分类器（音视频 / MAC / IPv6 / 路径）和一批旧分类器（CSV/UA/PEM/扩展文件等）还没有任何动作。下面分四层推进，从“补齐空缺”到“引入新动作能力”。
 
@@ -140,24 +149,33 @@ bash wasm/build.sh            # 重编 WASM
   - 敏感个人信息（身份证 `id_card` / 手机 `id_phone` / 银行卡 `id_bankcard`）的动作集**故意留空**，绝不提供“拿这个号去外部网站查”的链接——那等于把明文送出去，违背“零外发”立身之本。这三个保持 `[]`，要做也只能做**纯本地**动作（如本地校验位说明、复制脱敏值），不得加外链。
   - 一切外链仍遵循“点击才出去”，识别阶段零请求。
 
-  **第一层 · 补齐空动作（最低垂的果，纯配置，零新代码）**
-  给本轮新分类器和现有空 `[]` 补 actions.json 条目 + i18n labelKey（中英镜像）：
-  - `media_audio`：复制曲名/艺术家、（若有 ID3）搜歌名跳网易云/QQ 音乐网页搜索。
-  - `media_video`：复制时长/分辨率信息、本地另存（下载 blob）。
-  - `id_mac`：查 OUI 厂商（macvendors.com）、复制规范化 MAC。
-  - `id_ipv6`：ipinfo.io / ip138 查询（与 `id_ip` 对齐）。
-  - `life_path`：复制路径、复制纯文件名、复制父目录、（Windows）复制 `explorer 路径` 命令。
-  - `struct_csv`：复制为 Markdown 表格、行列数说明。
-  - `struct_ua`：跳 useragentstring.com 解析。
-  - `file_extended` / `file_pem`：复制哈希、（PEM）复制去头尾的 Base64 体。
-  - `id_plate`：纯本地——复制号牌、（非敏感）说明归属地。
+  **第一层 · 补齐空动作 ✓ 已完成（2026-06-24，纯配置 + 补 tplVars）**
+  给本轮新分类器和现有空 `[]` 补 actions.json 条目 + i18n labelKey（中英镜像）。实际落地：
+  - `media_audio`：复制曲名、（有 ID3）网易云搜歌名、复制时长。
+  - `media_video`：复制分辨率、复制时长。
+  - `id_mac`：复制规范化 MAC、查 OUI 厂商（api.macvendors.com）。
+  - `id_ipv6`：ip138 / ipinfo.io 查询（与 `id_ip` 对齐）。
+  - `life_path`：复制路径 / 文件名 / 父目录 / `explorer "路径"` 命令（parent 在分类器内就地算）。
+  - `struct_csv`：复制为 Markdown 表格（分类器内生成 `markdown` 串）、复制原文。
+  - `struct_ua`：跳 useragentstring.com 解析、复制 UA。
+  - `file_pem`：复制整段 PEM（安全动作）。`id_plate`：复制号牌 + 复制归属地（纯本地）。
+  - 配套补的 tplVars：MediaBase 音视频(title/artist/duration/resolution)、identity 车牌(region)、
+    structuredView CSV(markdown/rows/cols)+UA(ua)、fileExtra PEM(pem)、lifeView 路径(parent/fileName)。
+  - **与策划的出入**：`file_extended` 的「复制哈希」**未做**——哈希是 `buildHashPanel` 异步算的，
+    应由第三层动态注入（`dynamicActions`），第一层留空；PEM 私钥的「复制 Base64 体」也留到有
+    `reveal-action`（二次确认）再做，第一层只给安全的「复制整段」。
+  - 验证：CDP 实跑 MAC/IPv6/路径/CSV/WAV，动作按钮齐全、link href 正确插值（无 `{{}}` 残留）、零 JS 错误。
 
-  **第二层 · 新动作类型（需动 ActionEngine，扩 type 枚举）**
-  当前只有 `link`/`copy`。建议新增：
-  - `download`：把当前字节/文本存成文件（`Blob` + `a.download`）。覆盖：拖入的二进制原样另存、解码结果存文本、SVG 存 `.svg`、二维码 PNG 下载。
-  - `transform-copy`：先对值做一次本地变换再复制（不只是原样复制）。如时间戳→复制本地时间字符串、坐标→复制 GCJ02/BD09 各一份、JSON→复制压缩版/美化版、颜色→复制 RGB/HSL 各格式。
-  - `qr`：把文本/URL/坐标**本地**生成二维码（纯前端库或自绘，零外发），手机扫一扫即用。这是高爽点动作。
-  - `reveal-action`：动作本身带确认态（如“复制私钥”要二次确认），用于 PEM 私钥等敏感但非个人隐私的内容。
+  **第二层 · 新动作类型 ✓ 已完成（2026-06-26，CDP 真机验证通过）**
+  在 `link`/`copy` 之外新增并落地了：
+  - `download`：把字节/文本存成文件（`Blob`+`a.download`）。`source:"bytes"` 走 ctx（图片/PE/音视频原样另存），文本类走 tplVars（SVG 存 `.svg`）。
+  - `qr`：纯本地零依赖二维码（`core/qrcode.js` 的 `makeQR`/`renderQRCanvas`），覆盖 URL/坐标/文本，手机扫一扫即用。
+  - `transform-copy` / `reveal-action`：暂未做，留到后续按需补（非本轮验收目标）。
+  实际落地与验证：
+  - `ActionEngine.js` 的 `download`/`qr` 两分支 + `ctx` 形参 + import 均已落盘；`actions.json` 条目、zh/en i18n（`showQr/downloadFile/downloadVideo/downloadAudio/downloadSvg`+`action.qrResult`）镜像一致。
+  - 补完两个交接缺口：① `main.js` 的 `showCandidate` 加第 4 形参 `ctx`，`renderActions` 透传，两个调用点补 `{bytes,mime,fileName}`；② `css/layout.css` 补 `.qr-canvas`（白底/12px 留白/10px 圆角/居中）。
+  - **修了一个潜伏 bug**：`renderQRCanvas` 旧签名只收数字 `scale`，但 ActionEngine 传的是 `{scale,margin}` 对象 → `dim=NaN`、canvas 尺寸为 0，二维码画不出来。上会话「验证过」走的是 `makeQR` 直绘 OffscreenCanvas，绕过了这个包装函数，所以 bug 一直没暴露。已改成兼收对象与数字。
+  - CDP 真机验证（完整 chromium-1200 + chrome-headless-shell）：paste(URL) 切到 URL 候选→点「生成二维码」→canvas 正确生成（246×246=（33+8）×6）、样式正确；drop(PNG)→「下载文件」按钮点击触发 download（blob href + `download="dot.png"`）；全程零 JS 错误。Windows 桌面 Chrome 不带 BarcodeDetector（Shape Detection API 仅 Android/Mac/ChromeOS），故改用**像素级自校验**：canvas 1089 个模块像素与 `makeQR` 布尔矩阵逐一比对 0 处不一致、安静区纯白——等价于扫码可解（编码器正确性上会话已用 BarcodeDetector 单独验过）。
 
   **第三层 · 上下文感知动作（动作集随 parse 结果动态生成，而非纯静态 JSON）**
   现在 actions 是 `actionKey → 固定数组`。扩展为允许分类器在 `parse()` 里回传 `dynamicActions`，与静态集合并：

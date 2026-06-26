@@ -240,10 +240,24 @@ export class PathClassifier extends BaseClassifier {
     }
     rows.push([t("cardRow.pathDepth"), `${p.depth} ${t("cardRow.pathDepthUnit")}`]);
 
+    // 父目录：去掉最后一段后用原分隔符重组（带上根）。无可去段则留空。
+    let parent = "";
+    if (p.segments.length > (p.isDir ? 0 : 1)) {
+      const keep = p.segments.slice(0, p.isDir ? -1 : -1);
+      parent = (p.root || "") + keep.join(p.sep);
+    } else if (p.root) {
+      parent = p.root;
+    }
+
     return {
       actionKey: "life_path",
       subtitle: t("cls.path"),
-      tplVars: { path: item.text.trim(), fileName: p.fileName || "" },
+      tplVars: {
+        path: item.text.trim(),
+        fileName: p.fileName || "",
+        parent,
+        winExplorer: `explorer "${item.text.trim()}"`,
+      },
       render: (el) => {
         el.appendChild(
           buildInfoCard(rows, { title: t("cardTitle.path"), note: t("cardNote.path") })

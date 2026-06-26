@@ -654,6 +654,7 @@ export const EN = {
 
   action: {
     copied: "✓ Copied",
+    qrResult: "Scan to use",
     copyFailed: "Copy failed",
     decodeResult: "Decode Result",
     decodeFailed: "Decode failed: ",
@@ -771,6 +772,25 @@ export const EN = {
     copyHtmlSource: "Copy HTML Source",
     copyXmlSource: "Copy XML Source",
     googleSearch: "Search with Google",
+    showQr: "Show QR code",
+    downloadFile: "Download file",
+    downloadVideo: "Download video",
+    downloadAudio: "Download audio",
+    downloadSvg: "Download SVG",
+    copyMac: "Copy MAC",
+    ouiLookup: "Look up OUI vendor",
+    parseUaOnline: "Parse online",
+    copyUa: "Copy UA string",
+    copyDuration: "Copy duration",
+    copyResolution: "Copy resolution",
+    copyTrackTitle: "Copy track title",
+    searchNeteaseMusic: "Search on NetEase Music",
+    copyPath: "Copy path",
+    copyFileName: "Copy file name",
+    copyParentDir: "Copy parent dir",
+    copyExplorerCmd: "Copy explorer command",
+    copyPem: "Copy full PEM",
+    copyAsMarkdown: "Copy as Markdown table",
   },
 
   capItem: {

@@ -9,6 +9,7 @@
  */
 import { tryDecode, CODECS } from "../core/codec.js";
 import { renderVisibleText } from "../views/renderers/visibleText.js";
+import { renderQRCanvas } from "../core/qrcode.js";
 import { t } from "../i18n/i18n.js";
 
 let _config = null;
@@ -34,7 +35,7 @@ function interpolate(tpl, vars, encode) {
  * @param {string} actionKey
  * @param {object} tplVars      约定 raw 为原始文本，供 decode 使用
  */
-export async function renderActions(listEl, actionKey, tplVars = {}) {
+export async function renderActions(listEl, actionKey, tplVars = {}, ctx = {}) {
   const config = await loadConfig();
   const defs = config[actionKey] || [];
   listEl.innerHTML = "";
@@ -104,6 +105,47 @@ export async function renderActions(listEl, actionKey, tplVars = {}) {
           pre.classList.add("decode-result__error");
         }
         box.append(title, pre);
+        listEl.querySelectorAll(".action-chip").forEach((c) => c.classList.remove("copied"));
+        btn.classList.add("copied");
+      });
+      listEl.appendChild(btn);
+    } else if (def.type === "download") {
+      const btn = document.createElement("button");
+      btn.className = "action-chip";
+      btn.setAttribute("data-glass", "chip");
+      btn.textContent = t(def.labelKey);
+      btn.addEventListener("click", () => {
+        let blob, fname;
+        if (def.source === "bytes" && ctx.bytes) {
+          blob = new Blob([ctx.bytes], { type: ctx.mime || "application/octet-stream" });
+          fname = ctx.fileName || interpolate(def.filename || "file.bin", tplVars, false);
+        } else {
+          const text = interpolate(def.template || "{{text}}", tplVars, false);
+          blob = new Blob([text], { type: def.mime || "text/plain;charset=utf-8" });
+          fname = interpolate(def.filename || "clip.txt", tplVars, false);
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = fname; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+      listEl.appendChild(btn);
+    } else if (def.type === "qr") {
+      const btn = document.createElement("button");
+      btn.className = "action-chip";
+      btn.setAttribute("data-glass", "chip");
+      btn.textContent = t(def.labelKey);
+      btn.addEventListener("click", () => {
+        const text = interpolate(def.template || "{{text}}", tplVars, false);
+        const box = ensureResultBox();
+        box.innerHTML = "";
+        if (!text) return;
+        const canvas = renderQRCanvas(text, { scale: 6, margin: 4 });
+        canvas.className = "qr-canvas";
+        const title = document.createElement("div");
+        title.className = "decode-result__title";
+        title.textContent = t("action.qrResult");
+        box.append(title, canvas);
         listEl.querySelectorAll(".action-chip").forEach((c) => c.classList.remove("copied"));
         btn.classList.add("copied");
       });

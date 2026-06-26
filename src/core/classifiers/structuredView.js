@@ -33,10 +33,21 @@ export class CsvClassifier extends BaseClassifier {
 
   async parse(item) {
     const rows = parseCSV(item.text.trim());
+    const cols = rows.length ? rows[0].length : 0;
+    // 转 Markdown 表格（首行表头 + 分隔行），供「复制为 Markdown」动作用
+    const esc = (s) => String(s).replace(/\|/g, "\\|").replace(/\n/g, " ");
+    let markdown = "";
+    if (rows.length) {
+      markdown += "| " + rows[0].map(esc).join(" | ") + " |\n";
+      markdown += "| " + rows[0].map(() => "---").join(" | ") + " |\n";
+      for (const row of rows.slice(1)) {
+        markdown += "| " + row.map(esc).join(" | ") + " |\n";
+      }
+    }
     return {
       actionKey: "struct_csv",
       subtitle: t("cls.csv", { count: rows.length }),
-      tplVars: {},
+      tplVars: { rows: String(rows.length), cols: String(cols), markdown },
       render: (el) => {
         const table = document.createElement("table");
         table.className = "datatable";
@@ -110,7 +121,7 @@ export class UserAgentClassifier extends BaseClassifier {
     return {
       actionKey: "struct_ua",
       subtitle: t("cls.ua"),
-      tplVars: {},
+      tplVars: { ua },
       render: (el) => {
         el.appendChild(
           buildInfoCard(

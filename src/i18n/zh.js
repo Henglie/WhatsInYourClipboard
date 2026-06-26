@@ -662,6 +662,7 @@ export const ZH = {
 
   action: {
     copied: "✓ 已复制",
+    qrResult: "扫码即用",
     copyFailed: "复制失败",
     decodeResult: "解码结果",
     decodeFailed: "解码失败：",
@@ -779,6 +780,25 @@ export const ZH = {
     copyHtmlSource: "复制 HTML 源码",
     copyXmlSource: "复制 XML 源码",
     googleSearch: "用 Google 搜索",
+    showQr: "生成二维码",
+    downloadFile: "下载文件",
+    downloadVideo: "下载视频",
+    downloadAudio: "下载音频",
+    downloadSvg: "下载 SVG",
+    copyMac: "复制 MAC 地址",
+    ouiLookup: "查 OUI 厂商",
+    parseUaOnline: "在线解析",
+    copyUa: "复制 UA 字符串",
+    copyDuration: "复制时长",
+    copyResolution: "复制分辨率",
+    copyTrackTitle: "复制曲名",
+    searchNeteaseMusic: "在网易云音乐搜索",
+    copyPath: "复制路径",
+    copyFileName: "复制文件名",
+    copyParentDir: "复制父目录",
+    copyExplorerCmd: "复制 explorer 命令",
+    copyPem: "复制完整 PEM",
+    copyAsMarkdown: "复制为 Markdown 表格",
   },
 
   capItem: {

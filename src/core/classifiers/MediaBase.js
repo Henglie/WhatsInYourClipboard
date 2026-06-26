@@ -225,10 +225,23 @@ export class AudioVideoClassifier extends BaseClassifier {
     const blob = new Blob([item.bytes], { type: mime });
     const url = URL.createObjectURL(blob);
 
+    // 动作模板插值：曲名/艺术家供搜歌，时长/分辨率供复制。
+    // 搜索串优先「曲名 艺术家」，没标签则空（actions.json 会据此决定显隐）。
+    const songQuery = [meta.title, meta.artist].filter(Boolean).join(" ");
+    const dims = meta.width ? `${meta.width} × ${meta.height}` : "";
+    const dur = meta.duration != null ? (fmtDuration(meta.duration) || "") : "";
     return {
       actionKey: isVideo ? "media_video" : "media_audio",
       subtitle: isVideo ? t("cls.video") : t("cls.audio"),
-      tplVars: { format: meta.format },
+      tplVars: {
+        format: meta.format,
+        title: meta.title || "",
+        artist: meta.artist || "",
+        album: meta.album || "",
+        songQuery,
+        dims,
+        duration: dur,
+      },
       render: (el) => {
         // 本地预览（不外发：blob: URL 指向内存字节）
         const player = document.createElement(isVideo ? "video" : "audio");

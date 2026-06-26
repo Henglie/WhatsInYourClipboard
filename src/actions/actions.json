@@ -1,179 +1,622 @@
 {
   "text_url": [
-    { "labelKey": "actionLabel.openInNewTab", "type": "link", "url": "{{url}}" },
-    { "labelKey": "actionLabel.checkUrlscan", "type": "link", "url": "https://urlscan.io/search/#{{url}}" },
-    { "labelKey": "actionLabel.copyLink", "type": "copy", "template": "{{url}}" }
+    {
+      "labelKey": "actionLabel.openInNewTab",
+      "type": "link",
+      "url": "{{url}}"
+    },
+    {
+      "labelKey": "actionLabel.checkUrlscan",
+      "type": "link",
+      "url": "https://urlscan.io/search/#{{url}}"
+    },
+    {
+      "labelKey": "actionLabel.copyLink",
+      "type": "copy",
+      "template": "{{url}}"
+    },
+    {
+      "labelKey": "actionLabel.showQr",
+      "type": "qr",
+      "template": "{{url}}"
+    }
   ],
   "text_short": [
-    { "labelKey": "actionLabel.copyText", "type": "copy", "template": "{{text}}" }
+    {
+      "labelKey": "actionLabel.copyText",
+      "type": "copy",
+      "template": "{{text}}"
+    }
   ],
   "text_sensitive": [],
   "text_json": [
-    { "labelKey": "actionLabel.copyJson", "type": "copy", "template": "{{text}}" },
-    { "labelKey": "actionLabel.openJsonlint", "type": "link", "url": "https://jsonlint.com/" }
+    {
+      "labelKey": "actionLabel.copyJson",
+      "type": "copy",
+      "template": "{{text}}"
+    },
+    {
+      "labelKey": "actionLabel.openJsonlint",
+      "type": "link",
+      "url": "https://jsonlint.com/"
+    }
   ],
   "text_code": [
-    { "labelKey": "actionLabel.copyCode", "type": "copy", "template": "{{text}}" }
+    {
+      "labelKey": "actionLabel.copyCode",
+      "type": "copy",
+      "template": "{{text}}"
+    }
   ],
   "media_image": [
-    { "labelKey": "actionLabel.googleLens", "type": "link", "url": "https://lens.google.com/" },
-    { "labelKey": "actionLabel.tineyeSearch", "type": "link", "url": "https://tineye.com/" }
+    {
+      "labelKey": "actionLabel.googleLens",
+      "type": "link",
+      "url": "https://lens.google.com/"
+    },
+    {
+      "labelKey": "actionLabel.tineyeSearch",
+      "type": "link",
+      "url": "https://tineye.com/"
+    },
+    {
+      "labelKey": "actionLabel.downloadFile",
+      "type": "download",
+      "source": "bytes",
+      "filename": "image"
+    }
   ],
   "file_exe": [
-    { "labelKey": "actionLabel.threatbookScan", "type": "link", "url": "https://s.threatbook.com/" },
-    { "labelKey": "actionLabel.runLocally", "type": "copy", "template": "start \"\" \"{{fileName}}\"" }
+    {
+      "labelKey": "actionLabel.threatbookScan",
+      "type": "link",
+      "url": "https://s.threatbook.com/"
+    },
+    {
+      "labelKey": "actionLabel.runLocally",
+      "type": "copy",
+      "template": "start \"\" \"{{fileName}}\""
+    },
+    {
+      "labelKey": "actionLabel.downloadFile",
+      "type": "download",
+      "source": "bytes",
+      "filename": "{{fileName}}"
+    }
   ],
   "file_zip": [
-    { "labelKey": "actionLabel.ezyzipExtract", "type": "link", "url": "https://www.ezyzip.com/" }
+    {
+      "labelKey": "actionLabel.ezyzipExtract",
+      "type": "link",
+      "url": "https://www.ezyzip.com/"
+    }
   ],
   "file_pdf": [
-    { "labelKey": "actionLabel.smallpdfProcess", "type": "link", "url": "https://smallpdf.com/" }
+    {
+      "labelKey": "actionLabel.smallpdfProcess",
+      "type": "link",
+      "url": "https://smallpdf.com/"
+    }
   ],
   "encoded_hash": [
-    { "labelKey": "actionLabel.virustotalSearch", "type": "link", "url": "https://www.virustotal.com/gui/search/{{hash}}" },
-    { "labelKey": "actionLabel.threatbookHash", "type": "link", "url": "https://s.threatbook.com/report/hash/{{hash}}" },
-    { "labelKey": "actionLabel.copyHash", "type": "copy", "template": "{{hash}}" }
+    {
+      "labelKey": "actionLabel.virustotalSearch",
+      "type": "link",
+      "url": "https://www.virustotal.com/gui/search/{{hash}}"
+    },
+    {
+      "labelKey": "actionLabel.threatbookHash",
+      "type": "link",
+      "url": "https://s.threatbook.com/report/hash/{{hash}}"
+    },
+    {
+      "labelKey": "actionLabel.copyHash",
+      "type": "copy",
+      "template": "{{hash}}"
+    }
   ],
   "encoded_base64": [
-    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+    {
+      "labelKey": "actionLabel.copyDecoded",
+      "type": "copy",
+      "template": "{{decoded}}"
+    }
   ],
   "token_jwt": [
-    { "labelKey": "actionLabel.copyToken", "type": "copy", "template": "{{token}}" },
-    { "labelKey": "actionLabel.debugJwtio", "type": "link", "url": "https://jwt.io/" }
+    {
+      "labelKey": "actionLabel.copyToken",
+      "type": "copy",
+      "template": "{{token}}"
+    },
+    {
+      "labelKey": "actionLabel.debugJwtio",
+      "type": "link",
+      "url": "https://jwt.io/"
+    }
   ],
   "token_uuid": [
-    { "labelKey": "actionLabel.copyUuid", "type": "copy", "template": "{{uuid}}" }
+    {
+      "labelKey": "actionLabel.copyUuid",
+      "type": "copy",
+      "template": "{{uuid}}"
+    }
   ],
   "crypto_eth": [
-    { "labelKey": "actionLabel.viewEtherscan", "type": "link", "url": "https://etherscan.io/address/{{address}}" },
-    { "labelKey": "actionLabel.copyAddress", "type": "copy", "template": "{{address}}" }
+    {
+      "labelKey": "actionLabel.viewEtherscan",
+      "type": "link",
+      "url": "https://etherscan.io/address/{{address}}"
+    },
+    {
+      "labelKey": "actionLabel.copyAddress",
+      "type": "copy",
+      "template": "{{address}}"
+    }
   ],
   "crypto_btc": [
-    { "labelKey": "actionLabel.viewBlockchainExplorer", "type": "link", "url": "https://www.blockchain.com/explorer/addresses/btc/{{address}}" },
-    { "labelKey": "actionLabel.copyAddress", "type": "copy", "template": "{{address}}" }
+    {
+      "labelKey": "actionLabel.viewBlockchainExplorer",
+      "type": "link",
+      "url": "https://www.blockchain.com/explorer/addresses/btc/{{address}}"
+    },
+    {
+      "labelKey": "actionLabel.copyAddress",
+      "type": "copy",
+      "template": "{{address}}"
+    }
   ],
   "num_timestamp": [
-    { "labelKey": "actionLabel.copyIsoTime", "type": "copy", "template": "{{iso}}" }
+    {
+      "labelKey": "actionLabel.copyIsoTime",
+      "type": "copy",
+      "template": "{{iso}}"
+    }
   ],
   "num_color": [
-    { "labelKey": "actionLabel.copyColorValue", "type": "copy", "template": "{{color}}" }
+    {
+      "labelKey": "actionLabel.copyColorValue",
+      "type": "copy",
+      "template": "{{color}}"
+    }
   ],
   "num_base": [
-    { "labelKey": "actionLabel.copyDecimal", "type": "copy", "template": "{{dec}}" }
+    {
+      "labelKey": "actionLabel.copyDecimal",
+      "type": "copy",
+      "template": "{{dec}}"
+    }
   ],
   "enc_url": [
-    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+    {
+      "labelKey": "actionLabel.copyDecoded",
+      "type": "copy",
+      "template": "{{decoded}}"
+    }
   ],
   "enc_html": [
-    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+    {
+      "labelKey": "actionLabel.copyDecoded",
+      "type": "copy",
+      "template": "{{decoded}}"
+    }
   ],
   "enc_unicode": [
-    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+    {
+      "labelKey": "actionLabel.copyDecoded",
+      "type": "copy",
+      "template": "{{decoded}}"
+    }
   ],
   "enc_morse": [
-    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+    {
+      "labelKey": "actionLabel.copyDecoded",
+      "type": "copy",
+      "template": "{{decoded}}"
+    }
   ],
   "id_card": [],
   "id_phone": [],
   "id_bankcard": [],
   "id_ip": [
-    { "labelKey": "actionLabel.checkIp138", "type": "link", "url": "https://www.ip138.com/iplookup.php?ip={{ip}}" },
-    { "labelKey": "actionLabel.checkIpinfo", "type": "link", "url": "https://ipinfo.io/{{ip}}" }
+    {
+      "labelKey": "actionLabel.checkIp138",
+      "type": "link",
+      "url": "https://www.ip138.com/iplookup.php?ip={{ip}}"
+    },
+    {
+      "labelKey": "actionLabel.checkIpinfo",
+      "type": "link",
+      "url": "https://ipinfo.io/{{ip}}"
+    }
   ],
-  "id_plate": [],
-  "struct_csv": [],
+  "id_plate": [
+    {
+      "labelKey": "actionLabel.copyOriginal",
+      "type": "copy",
+      "template": "{{plate}}"
+    }
+  ],
+  "struct_csv": [
+    {
+      "labelKey": "actionLabel.copyAsMarkdown",
+      "type": "copy",
+      "template": "{{markdown}}"
+    },
+    {
+      "labelKey": "actionLabel.copyOriginal",
+      "type": "copy",
+      "template": "{{text}}"
+    }
+  ],
   "struct_cron": [
-    { "labelKey": "actionLabel.debugCrontabGuru", "type": "link", "url": "https://crontab.guru/" }
+    {
+      "labelKey": "actionLabel.debugCrontabGuru",
+      "type": "link",
+      "url": "https://crontab.guru/"
+    }
   ],
-  "struct_ua": [],
+  "struct_ua": [
+    {
+      "labelKey": "actionLabel.parseUaOnline",
+      "type": "link",
+      "url": "https://useragentstring.com/?uas={{ua}}"
+    },
+    {
+      "labelKey": "actionLabel.copyUa",
+      "type": "copy",
+      "template": "{{ua}}"
+    }
+  ],
   "struct_sql": [
-    { "labelKey": "actionLabel.copySql", "type": "copy", "template": "{{sql}}" }
+    {
+      "labelKey": "actionLabel.copySql",
+      "type": "copy",
+      "template": "{{sql}}"
+    }
   ],
   "struct_markdown": [
-    { "labelKey": "actionLabel.copyMarkdown", "type": "copy", "template": "{{text}}" }
+    {
+      "labelKey": "actionLabel.copyMarkdown",
+      "type": "copy",
+      "template": "{{text}}"
+    }
   ],
   "struct_html": [
-    { "labelKey": "actionLabel.copyHtmlSource", "type": "copy", "template": "{{html}}" }
+    {
+      "labelKey": "actionLabel.copyHtmlSource",
+      "type": "copy",
+      "template": "{{html}}"
+    }
   ],
   "struct_xml": [
-    { "labelKey": "actionLabel.copyXmlSource", "type": "copy", "template": "{{text}}" }
+    {
+      "labelKey": "actionLabel.copyXmlSource",
+      "type": "copy",
+      "template": "{{text}}"
+    }
   ],
   "life_address": [
-    { "labelKey": "actionLabel.viewAmap", "type": "link", "url": "https://www.amap.com/search?query={{query}}" },
-    { "labelKey": "actionLabel.copyAddress", "type": "copy", "template": "{{query}}" }
+    {
+      "labelKey": "actionLabel.viewAmap",
+      "type": "link",
+      "url": "https://www.amap.com/search?query={{query}}"
+    },
+    {
+      "labelKey": "actionLabel.copyAddress",
+      "type": "copy",
+      "template": "{{query}}"
+    }
   ],
   "life_coord": [
-    { "labelKey": "actionLabel.openAmapMarker", "type": "link", "url": "https://uri.amap.com/marker?position={{gcj}}" },
-    { "labelKey": "actionLabel.copyWgs84", "type": "copy", "template": "{{wgs}}" }
+    {
+      "labelKey": "actionLabel.openAmapMarker",
+      "type": "link",
+      "url": "https://uri.amap.com/marker?position={{gcj}}"
+    },
+    {
+      "labelKey": "actionLabel.copyWgs84",
+      "type": "copy",
+      "template": "{{wgs}}"
+    },
+    {
+      "labelKey": "actionLabel.showQr",
+      "type": "qr",
+      "template": "{{wgs}}"
+    }
   ],
   "life_math": [
-    { "labelKey": "actionLabel.copyResult", "type": "copy", "template": "{{result}}" }
+    {
+      "labelKey": "actionLabel.copyResult",
+      "type": "copy",
+      "template": "{{result}}"
+    }
   ],
   "life_isbn": [
-    { "labelKey": "actionLabel.searchDouban", "type": "link", "url": "https://search.douban.com/book/subject_search?search_text={{isbn}}" }
+    {
+      "labelKey": "actionLabel.searchDouban",
+      "type": "link",
+      "url": "https://search.douban.com/book/subject_search?search_text={{isbn}}"
+    }
   ],
   "life_express": [
-    { "labelKey": "actionLabel.searchKuaidi100", "type": "link", "url": "https://www.kuaidi100.com/chaxun?nu={{code}}" }
+    {
+      "labelKey": "actionLabel.searchKuaidi100",
+      "type": "link",
+      "url": "https://www.kuaidi100.com/chaxun?nu={{code}}"
+    }
+  ],
+  "life_path": [
+    {
+      "labelKey": "actionLabel.copyPath",
+      "type": "copy",
+      "template": "{{path}}"
+    },
+    {
+      "labelKey": "actionLabel.copyFileName",
+      "type": "copy",
+      "template": "{{fileName}}"
+    },
+    {
+      "labelKey": "actionLabel.copyParentDir",
+      "type": "copy",
+      "template": "{{parent}}"
+    },
+    {
+      "labelKey": "actionLabel.copyExplorerCmd",
+      "type": "copy",
+      "template": "explorer \"{{path}}\""
+    }
   ],
   "culture_cipai": [
-    { "labelKey": "actionLabel.searchSouyun", "type": "link", "url": "https://sou-yun.cn/QueryPoem.aspx?key={{q}}" },
-    { "labelKey": "actionLabel.wikipediaCipai", "type": "link", "url": "https://zh.wikipedia.org/wiki/{{q}}" }
+    {
+      "labelKey": "actionLabel.searchSouyun",
+      "type": "link",
+      "url": "https://sou-yun.cn/QueryPoem.aspx?key={{q}}"
+    },
+    {
+      "labelKey": "actionLabel.wikipediaCipai",
+      "type": "link",
+      "url": "https://zh.wikipedia.org/wiki/{{q}}"
+    }
   ],
   "culture_poetry": [
-    { "labelKey": "actionLabel.searchSouyunPoetry", "type": "link", "url": "https://sou-yun.cn/QueryPoem.aspx?key={{q}}" },
-    { "labelKey": "actionLabel.searchGushiwen", "type": "link", "url": "https://so.gushiwen.cn/search.aspx?value={{full}}" },
-    { "labelKey": "actionLabel.copyFullText", "type": "copy", "template": "{{full}}" }
+    {
+      "labelKey": "actionLabel.searchSouyunPoetry",
+      "type": "link",
+      "url": "https://sou-yun.cn/QueryPoem.aspx?key={{q}}"
+    },
+    {
+      "labelKey": "actionLabel.searchGushiwen",
+      "type": "link",
+      "url": "https://so.gushiwen.cn/search.aspx?value={{full}}"
+    },
+    {
+      "labelKey": "actionLabel.copyFullText",
+      "type": "copy",
+      "template": "{{full}}"
+    }
   ],
   "culture_zh_query": [
-    { "labelKey": "actionLabel.searchSouyunWord", "type": "link", "url": "https://sou-yun.cn/QueryPoem.aspx?key={{q}}" },
-    { "labelKey": "actionLabel.searchZdic", "type": "link", "url": "https://www.zdic.net/hans/{{q}}" },
-    { "labelKey": "actionLabel.copyOriginal", "type": "copy", "template": "{{q}}" }
+    {
+      "labelKey": "actionLabel.searchSouyunWord",
+      "type": "link",
+      "url": "https://sou-yun.cn/QueryPoem.aspx?key={{q}}"
+    },
+    {
+      "labelKey": "actionLabel.searchZdic",
+      "type": "link",
+      "url": "https://www.zdic.net/hans/{{q}}"
+    },
+    {
+      "labelKey": "actionLabel.copyOriginal",
+      "type": "copy",
+      "template": "{{q}}"
+    }
   ],
   "culture_translate": [
-    { "labelKey": "actionLabel.googleTranslate", "type": "link", "url": "https://translate.google.com/?sl=auto&tl=zh-CN&text={{text}}&op=translate" },
-    { "labelKey": "actionLabel.deeplTranslate", "type": "link", "url": "https://www.deepl.com/translator#auto/zh/{{text}}" }
+    {
+      "labelKey": "actionLabel.googleTranslate",
+      "type": "link",
+      "url": "https://translate.google.com/?sl=auto&tl=zh-CN&text={{text}}&op=translate"
+    },
+    {
+      "labelKey": "actionLabel.deeplTranslate",
+      "type": "link",
+      "url": "https://www.deepl.com/translator#auto/zh/{{text}}"
+    }
   ],
   "culture_emoji": [
-    { "labelKey": "actionLabel.searchEmojipedia", "type": "link", "url": "https://emojipedia.org/zh/search?q={{q}}" }
+    {
+      "labelKey": "actionLabel.searchEmojipedia",
+      "type": "link",
+      "url": "https://emojipedia.org/zh/search?q={{q}}"
+    }
   ],
   "vert_barcode": [
-    { "labelKey": "actionLabel.searchBarcodeLookup", "type": "link", "url": "https://www.barcodelookup.com/{{code}}" },
-    { "labelKey": "actionLabel.copyBarcode", "type": "copy", "template": "{{code}}" }
+    {
+      "labelKey": "actionLabel.searchBarcodeLookup",
+      "type": "link",
+      "url": "https://www.barcodelookup.com/{{code}}"
+    },
+    {
+      "labelKey": "actionLabel.copyBarcode",
+      "type": "copy",
+      "template": "{{code}}"
+    }
   ],
   "vert_sharecode": [
-    { "labelKey": "actionLabel.copyShareCode", "type": "copy", "template": "{{code}}" }
+    {
+      "labelKey": "actionLabel.copyShareCode",
+      "type": "copy",
+      "template": "{{code}}"
+    }
   ],
   "vert_sharecode_verify": [
-    { "labelKey": "actionLabel.goToVerify", "type": "link", "url": "{{verify}}" },
-    { "labelKey": "actionLabel.copyShareCode", "type": "copy", "template": "{{code}}" }
+    {
+      "labelKey": "actionLabel.goToVerify",
+      "type": "link",
+      "url": "{{verify}}"
+    },
+    {
+      "labelKey": "actionLabel.copyShareCode",
+      "type": "copy",
+      "template": "{{code}}"
+    }
   ],
   "vert_delta": [
-    { "labelKey": "actionLabel.searchDeltaLoadout", "type": "link", "url": "https://www.bing.com/search?q=三角洲行动 {{weapon}} 改枪码 配件" },
-    { "labelKey": "actionLabel.deltaWiki", "type": "link", "url": "https://wiki.biligame.com/deltaoperation2024/" },
-    { "labelKey": "actionLabel.copyGunsmithCode", "type": "copy", "template": "{{code}}" }
+    {
+      "labelKey": "actionLabel.searchDeltaLoadout",
+      "type": "link",
+      "url": "https://www.bing.com/search?q=三角洲行动 {{weapon}} 改枪码 配件"
+    },
+    {
+      "labelKey": "actionLabel.deltaWiki",
+      "type": "link",
+      "url": "https://wiki.biligame.com/deltaoperation2024/"
+    },
+    {
+      "labelKey": "actionLabel.copyGunsmithCode",
+      "type": "copy",
+      "template": "{{code}}"
+    }
   ],
   "file_extended": [],
-  "file_pem": [],
+  "file_pem": [
+    {
+      "labelKey": "actionLabel.copyPem",
+      "type": "copy",
+      "template": "{{pem}}"
+    }
+  ],
   "media_svg": [
-    { "labelKey": "actionLabel.copySvgSource", "type": "copy", "template": "{{svg}}" }
+    {
+      "labelKey": "actionLabel.copySvgSource",
+      "type": "copy",
+      "template": "{{svg}}"
+    },
+    {
+      "labelKey": "actionLabel.downloadSvg",
+      "type": "download",
+      "template": "{{svg}}",
+      "filename": "image.svg",
+      "mime": "image/svg+xml"
+    }
   ],
   "codec_binary": [
-    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+    {
+      "labelKey": "actionLabel.copyDecoded",
+      "type": "copy",
+      "template": "{{decoded}}"
+    }
   ],
   "codec_ascii85": [
-    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+    {
+      "labelKey": "actionLabel.copyDecoded",
+      "type": "copy",
+      "template": "{{decoded}}"
+    }
   ],
   "codec_qp": [
-    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+    {
+      "labelKey": "actionLabel.copyDecoded",
+      "type": "copy",
+      "template": "{{decoded}}"
+    }
   ],
   "codec_uu": [
-    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+    {
+      "labelKey": "actionLabel.copyDecoded",
+      "type": "copy",
+      "template": "{{decoded}}"
+    }
   ],
   "codec_base32": [
-    { "labelKey": "actionLabel.copyDecoded", "type": "copy", "template": "{{decoded}}" }
+    {
+      "labelKey": "actionLabel.copyDecoded",
+      "type": "copy",
+      "template": "{{decoded}}"
+    }
   ],
   "text_plain": [
-    { "labelKey": "actionLabel.copyFullText", "type": "copy", "template": "{{text}}" },
-    { "labelKey": "actionLabel.googleSearch", "type": "link", "url": "https://www.google.com/search?q={{text}}" }
+    {
+      "labelKey": "actionLabel.copyFullText",
+      "type": "copy",
+      "template": "{{text}}"
+    },
+    {
+      "labelKey": "actionLabel.googleSearch",
+      "type": "link",
+      "url": "https://www.google.com/search?q={{text}}"
+    },
+    {
+      "labelKey": "actionLabel.showQr",
+      "type": "qr",
+      "template": "{{text}}"
+    }
+  ],
+  "media_audio": [
+    {
+      "labelKey": "actionLabel.copyTrackTitle",
+      "type": "copy",
+      "template": "{{title}}"
+    },
+    {
+      "labelKey": "actionLabel.searchNeteaseMusic",
+      "type": "link",
+      "url": "https://music.163.com/#/search/m/?s={{songQuery}}"
+    },
+    {
+      "labelKey": "actionLabel.copyDuration",
+      "type": "copy",
+      "template": "{{duration}}"
+    },
+    {
+      "labelKey": "actionLabel.downloadAudio",
+      "type": "download",
+      "source": "bytes",
+      "filename": "audio"
+    }
+  ],
+  "media_video": [
+    {
+      "labelKey": "actionLabel.copyResolution",
+      "type": "copy",
+      "template": "{{dims}}"
+    },
+    {
+      "labelKey": "actionLabel.copyDuration",
+      "type": "copy",
+      "template": "{{duration}}"
+    },
+    {
+      "labelKey": "actionLabel.downloadVideo",
+      "type": "download",
+      "source": "bytes",
+      "filename": "video"
+    }
+  ],
+  "id_mac": [
+    {
+      "labelKey": "actionLabel.ouiLookup",
+      "type": "link",
+      "url": "https://api.macvendors.com/{{mac}}"
+    },
+    {
+      "labelKey": "actionLabel.copyMac",
+      "type": "copy",
+      "template": "{{mac}}"
+    }
+  ],
+  "id_ipv6": [
+    {
+      "labelKey": "actionLabel.checkIpinfo",
+      "type": "link",
+      "url": "https://ipinfo.io/{{ip}}"
+    },
+    {
+      "labelKey": "actionLabel.checkIp138",
+      "type": "link",
+      "url": "https://www.ip138.com/iplookup.php?ip={{ip}}"
+    }
   ]
 }

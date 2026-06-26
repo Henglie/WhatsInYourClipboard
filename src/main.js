@@ -50,13 +50,13 @@ function showLanding() {
   hydrateGlass(shell.stage);
 }
 
-/** 渲染某个候选解读到右侧 + 动作区 */
-async function showCandidate(view, result, rawText) {
+/** 渲染某个候选解读到右侧 + 动作区。ctx 透传原始字节/类型/文件名，供 download 的 source:"bytes" 二进制另存。 */
+async function showCandidate(view, result, rawText, ctx = {}) {
   view.setSubtitle(result.subtitle);
   view.renderTarget.innerHTML = "";
   view.actionsList.innerHTML = "";
   result.render(view.renderTarget);
-  await renderActions(view.actionsList, result.actionKey, result.tplVars || {});
+  await renderActions(view.actionsList, result.actionKey, result.tplVars || {}, ctx);
   // 文本类内容：在「下一步你要…」动作区附解码工具箱二级菜单（厚玻璃+加粗，与普通动作区分）
   const actionsSection = view.actionsList.parentElement;
   actionsSection.querySelectorAll(".toolbox").forEach((n) => n.remove());
@@ -152,6 +152,8 @@ async function handleReadWithItem(item) {
       return;
     }
 
+    const ctx = { bytes: item.bytes, mime: item.mime, fileName: item.meta?.fileName };
+
     const view = renderSplit(shell.stage, {
       subtitle: candidates[0].result.subtitle,
       bytes: item.bytes,
@@ -159,12 +161,12 @@ async function handleReadWithItem(item) {
       sensitive: !!candidates[0].result.sensitive,
       onSwitch: (i) => {
         view.setHexMask(!!candidates[i].result.sensitive);
-        showCandidate(view, candidates[i].result, item.isText ? item.text : null);
+        showCandidate(view, candidates[i].result, item.isText ? item.text : null, ctx);
       },
       onReset: showLanding,
     });
 
-    await showCandidate(view, candidates[0].result, item.isText ? item.text : null);
+    await showCandidate(view, candidates[0].result, item.isText ? item.text : null, ctx);
     hydrateGlass(shell.stage);
     shell.setStatus({
       state: candidates.length > 1

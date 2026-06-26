@@ -74,7 +74,7 @@ export class PemClassifier extends BaseClassifier {
     return {
       actionKey: "file_pem",
       subtitle: t("cls.pem", { type: human }),
-      tplVars: {},
+      tplVars: { pem: text },
       render: (el) => {
         const rows = [
           [t("cardRow.idType"), human],
