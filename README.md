@@ -30,10 +30,10 @@ Everything runs locally inside the browser sandbox — **not a single byte is up
 
 - **绝对隐私 / Absolute Privacy** — 纯本地沙箱运行，零上传。
 - **骨相 × 皮相 / Hex × Render** — 左侧底层 Hex，右侧类型化渲染视图。
-- **统一液态玻璃 / Unified Liquid Glass** — SVG 折射玻璃走 `filter:url()` 通道，Firefox / Chrome / Edge / 国产内核像素级一致；轻盈有力的物理化交互动效（无回弹的玻璃滑停曲线）。
+- **液态玻璃 / Liquid Glass** — SVG 折射玻璃走 `filter:url()` 通道，在 Chromium 内核（Chrome / Edge）上表现最佳；轻盈有力的物理化交互动效（无回弹的玻璃滑停曲线）。
 - **OOP 识别树 / Classifier Tree** — 文本、文件、多媒体、编码脚本的瀑布流判定。
 - **WASM 高性能层 / WASM Core** — Hex Dump、Hash、PE 头解析等重计算下沉到 WebAssembly。
-- **JSON 动作引擎 / JSON Action Engine** — 「下一步你要…」按钮完全由配置驱动，高可配置。
+- **JSON 动作引擎 / JSON Action Engine** — 「下一步你要…」按钮由配置驱动，支持外链查证、本地复制、解码、文件下载与**纯本地二维码**（零依赖、不外发）。
 
 ---
 
@@ -41,17 +41,65 @@ Everything runs locally inside the browser sandbox — **not a single byte is up
 
 | 层 / Layer | 技术 / Technology |
 | --- | --- |
-| 表现层 / UI | HTML5 + 现代 CSS3（统一液态玻璃：`filter:url()` SVG 折射 + 物理化交互动效，全引擎一致） |
+| 表现层 / UI | HTML5 + 现代 CSS3（液态玻璃：`filter:url()` SVG 折射 + 物理化交互动效，Chromium 内核表现最佳） |
 | 视觉系统 / VIS | [FairyGlass](https://github.com/Henglie/FairyGlass) 微蓝暗色液态玻璃设计系统（本项目 `css/` 即其母本） |
 | 逻辑层 / Logic | 原生 JavaScript（ES6+ 模块化） |
 | 计算层 / Core | WebAssembly（C 编译，经 emscripten） |
 
 ---
 
+## 快速开始 · Quick Start
+
+**中文**
+
+需要装 [Python 3](https://www.python.org)（只用它的标准库起本地服务器，无任何第三方依赖）。
+
+- **Windows**：双击 `启动.bat`
+- **macOS**：双击 `start.command`
+- **Linux / 任意终端**：在项目目录执行 `./start.sh` 或 `python3 start.py`
+
+它会起一个本地静态服务器，并**自动用 Chrome / Edge 打开**（液态玻璃的 SVG 折射在 Chromium 内核上表现最稳；找不到时会提示你安装）。
+
+> 为什么不能直接双击 `index.html`？本项目用 ES module + WebAssembly，`file://` 协议下会被浏览器 CORS 拦截、`.wasm` 也无法以 `application/wasm` 流式加载，必须经 http(s)。
+
+```bash
+python3 start.py            # 默认端口 8123，起服务器并自动开浏览器
+python3 start.py 9000       # 指定端口
+python3 start.py --no-open  # 不自动开浏览器（远程/无头环境）
+```
+
+**English**
+
+Requires [Python 3](https://www.python.org) (standard library only — zero third-party dependencies).
+
+- **Windows**: double-click `启动.bat`
+- **macOS**: double-click `start.command`
+- **Linux / any terminal**: run `./start.sh` or `python3 start.py` in the project directory
+
+It starts a local static server and **opens Chrome / Edge automatically** (liquid glass's SVG refraction is most reliable on Chromium; if none is found, it prints an install hint).
+
+> Why not just open `index.html` directly? This project uses ES modules + WebAssembly; under `file://` the browser blocks them via CORS and `.wasm` can't be streamed as `application/wasm`. It must be served over http(s).
+
+---
+
+## 浏览器兼容性 · Browser Compatibility
+
+**中文**
+
+- **服务器部署（推荐）**：把整个目录挂到任意 Web 服务器（Nginx / GitHub Pages / VS Code Live Server 等）访问时，**所有主流浏览器均正常，包括 Firefox**。
+- **本地双击启动**：用本地一键脚本（`start.py` / `启动.bat`）在 **Firefox** 里打开时，液态玻璃首帧偶发渲染异常（大标题与玻璃折射错乱）——点任意链接跳走再点浏览器「返回」即可恢复正常。根因是 Firefox 对 SVG `<feImage>` 的位移贴图 data URL 采取异步解码，首帧位移图尚未就绪；本地服务器与页面加载时序恰好触发，服务器部署环境则不复现。**故本地启动脚本默认用 Chrome / Edge（Chromium 内核）打开以规避该现象。**
+
+**English**
+
+- **Server deployment (recommended)**: served from any web server (Nginx / GitHub Pages / VS Code Live Server, etc.), **all major browsers work fine, Firefox included**.
+- **Local double-click launch**: when opened in **Firefox** via the local one-click scripts (`start.py` / `启动.bat`), liquid glass may glitch on the first frame (title and refraction garbled) — navigate to any link and hit the browser's Back button to restore it. The root cause is Firefox decoding the SVG `<feImage>` displacement-map data URL asynchronously, so the first frame renders before the map is ready; the local server's load timing happens to trigger it, while server-deployed environments don't reproduce it. **Hence the local launch scripts default to opening Chrome / Edge (Chromium) to sidestep this.**
+
+---
+
 ## 开发状态 · Status
 
-核心功能已实现并自检通过。当前正在搬运 [ToolsFx](https://github.com/Leon406/ToolsFx) 的完整编解码 / 密码学能力。
-Core features implemented and self-tested. Currently porting the full codec / cryptography suite from [ToolsFx](https://github.com/Leon406/ToolsFx).
+**● v1.0 已发布 · v1.0 Released** — 核心功能全部实现并自检通过，可用于日常使用。后续版本继续搬运 [ToolsFx](https://github.com/Leon406/ToolsFx) 的完整编解码 / 密码学能力。
+All core features implemented and self-tested, ready for daily use. Later versions will keep porting the full codec / cryptography suite from [ToolsFx](https://github.com/Leon406/ToolsFx).
 
 **已完成 · Done**
 - 应用外壳、状态机、液态玻璃 UI（着陆页下方含能力看板）

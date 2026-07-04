@@ -76,6 +76,22 @@
 
   .ex-count { color: var(--fg-dim); font-size: 0.78rem; font-weight: 400; margin-left: 8px; }
 
+  /* 「用它试试 →」跳回主应用自动识别 */
+  .ex-try {
+    align-self: flex-start;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: var(--accent-bright);
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--accent-soft, rgba(74,158,255,0.1));
+    transition: border-color var(--dur-fast) var(--ease-out-quint), background var(--dur-fast) var(--ease-out-quint), transform var(--dur-fast) var(--ease-out-quint);
+  }
+  .ex-try:hover { border-color: var(--accent); transform: translateX(2px); }
+  .ex-try:active { transform: translateX(2px) scale(0.98); }
+
   /* 敏感内容磨砂玻璃遮罩：打码值再蒙一层无缝磨砂，悬停/点击揭示 */
   .blur-reveal {
     position: relative; display: inline-block; border-radius: 6px;
@@ -268,8 +284,27 @@
       }
       result.appendChild(fields);
     }
+
+    // 「用它试试 →」：非拖放类样例可一键跳回主应用并自动识别（#try= 直达，
+    // 免去手动复制粘贴）。拖放类（图片/PE 等二进制）无文本可传，只给复制提示。
+    if (!s.drop) {
+      const go = document.createElement("a");
+      go.className = "ex-try";
+      go.textContent = "用它试试 →";
+      go.href = "../index.html#try=" + b64urlEncode(s.text);
+      result.appendChild(go);
+    }
+
     card.appendChild(result);
     return card;
+  }
+
+  // UTF-8 安全的 base64url 编码（与主应用 tryFromHash 解码对应）。
+  function b64urlEncode(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = "";
+    for (const b of bytes) bin += String.fromCharCode(b);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
 
   // 磨砂玻璃遮罩：打码值再蒙一层无缝磨砂，悬停/点击揭示，移开恢复

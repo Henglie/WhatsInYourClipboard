@@ -1454,6 +1454,70 @@
   gap: 0.8rem;
 }
 
+/* ---------- 动作分组（第四层） ---------- */
+/* 分组后 list 纵向堆叠各组；单组时仍是一个 group，视觉等同平铺。 */
+.actions__list:has(.action-group) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.action-group__title {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--fg-dim);
+  text-transform: none;
+}
+
+.action-group__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+/* 外链动作：离站标记 ↗，与本地动作视觉区分（贴合「点击才出去」）。 */
+.action-chip--external::after {
+  content: "↗";
+  font-size: 0.85em;
+  opacity: 0.7;
+  margin-left: 0.1em;
+}
+
+/* 「更多」折叠开关 + 折叠区 */
+.action-more-toggle {
+  align-self: flex-start;
+  margin-top: 0.2rem;
+  padding: 0.3em 0.9em;
+  border-radius: 999px;
+  border: 1px dashed var(--glass-stroke);
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 0.82rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: color var(--dur-quick) var(--ease-out-quint),
+    border-color var(--dur-quick) var(--ease-out-quint);
+}
+.action-more-toggle:hover {
+  color: var(--fg);
+  border-color: rgba(var(--glow-a), 0.55);
+}
+
+.action-more {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.action-more[hidden] {
+  display: none;
+}
+
 /* ---------- 代码运行沙箱（codeRunner） ---------- */
 .runner {
   margin-top: 1rem;
@@ -1545,3 +1609,133 @@
 .xml-tree__attr { color: #ffab70; }
 .xml-tree__attrval { color: #7ee787; }
 .xml-tree__text { color: var(--fg); }
+
+/* ---------- 随机数据区（首屏之下，不喧宾夺主） ---------- */
+.landing__tryrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1.5rem 3rem;
+  text-align: center;
+}
+.landing__tryhint {
+  color: var(--fg-muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+.landing__trybtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 通用小按钮（主 app 无 fg-btn，自带一套，配色贴合液态玻璃） */
+.landing__trybtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0.62rem 1.15rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill);
+  color: var(--fg);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.2s var(--ease-out-quint, ease),
+              background 0.2s var(--ease-out-quint, ease),
+              transform 0.2s var(--ease-out-quint, ease);
+}
+.landing__trybtn:hover {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.06);
+}
+.landing__trybtn:active { transform: translateY(1px); }
+.landing__trybtn--primary {
+  border-color: rgba(var(--glow-a), 0.5);
+  background: rgba(var(--glow-a), 0.16);
+  color: var(--accent-bright);
+  font-weight: 600;
+}
+.landing__trybtn--primary:hover {
+  background: rgba(var(--glow-a), 0.24);
+  border-color: var(--accent-bright);
+}
+.landing__trybtn--ghost { color: var(--fg-muted); }
+
+/* ---------- 移动端粘贴弹框 ---------- */
+.paste-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.22s var(--ease-out-quint, ease);
+}
+.paste-sheet.is-open { opacity: 1; }
+@media (min-width: 560px) {
+  .paste-sheet { align-items: center; }
+}
+.paste-sheet__panel {
+  width: 100%;
+  max-width: 480px;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 16px;
+  background: var(--glass-fill);
+  box-shadow: var(--inset-glass), 0 12px 40px rgba(0, 0, 0, 0.45);
+  padding: 1.4rem 1.4rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  transform: translateY(16px);
+  transition: transform 0.28s var(--ease-out-quint, ease);
+}
+.paste-sheet.is-open .paste-sheet__panel { transform: translateY(0); }
+.paste-sheet__title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--accent-bright);
+}
+.paste-sheet__hint {
+  font-size: 0.88rem;
+  color: var(--fg-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+.paste-sheet__input {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 5.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-stroke);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--fg);
+  outline: none;
+  transition: border-color 0.2s var(--ease-out-quint, ease);
+}
+.paste-sheet__input:focus { border-color: var(--accent); }
+.paste-sheet__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  margin-top: 0.2rem;
+}

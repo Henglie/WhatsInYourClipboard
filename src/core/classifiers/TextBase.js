@@ -14,6 +14,7 @@ import {
 import { buildInfoCard } from "../../views/renderers/infoCard.js";
 import { blurReveal } from "../../views/renderers/blurReveal.js";
 import { extractUrl, stripLabel } from "../normalize.js";
+import { siteActions } from "../siteActions.js";
 import { t } from "../../i18n/i18n.js";
 
 export class TextClassifier extends BaseClassifier {
@@ -38,6 +39,7 @@ export class TextClassifier extends BaseClassifier {
           actionKey: "text_url",
           subtitle: t("cls.url"),
           tplVars: { url: ex.url },
+          dynamicActions: siteActions(ex.url),
           render: (el) => {
             const a = document.createElement("a");
             a.href = ex.url;

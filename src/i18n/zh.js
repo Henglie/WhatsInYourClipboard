@@ -28,6 +28,9 @@ export const ZH = {
     ctaShortcutPrefix: "按下",
     ctaShortcut: "按下 Ctrl + V",
     scrollHint: "向下滚动，看看它能识别什么 ↓",
+    tryHint: "手边没东西可复制？拿个样例先试试 ——",
+    randomBtn: "复制随机数据",
+    examplesLink: "看它能识别什么 →",
     colSupported: "已经能识别",
     colPlanned: "即将支持",
     footer: "纯本地运行 · 不上传任何字节 · 联网增强功能均需手动点击触发",
@@ -36,6 +39,13 @@ export const ZH = {
     hintNeedPerm: "浏览器需要你的授权才能读剪贴板，请直接按下 Ctrl + V",
     btnNeedPerm: "请按下快捷键",
     hintReSwitch: "已切换语言，重新粘贴即可看到新语言的识别结果",
+  },
+  mobile: {
+    sheetTitle: "粘贴要识别的内容",
+    sheetHint: "手机浏览器读不到系统剪贴板。请在下面长按 → 粘贴，再点识别。",
+    placeholder: "长按此处，选择「粘贴」",
+    cancel: "取消",
+    recognize: "识别",
   },
   status: {
     idle: "● 待命",
@@ -668,6 +678,15 @@ export const ZH = {
     decodeFailed: "解码失败：",
     decodeWith: "按 {codec} 解码",
     empty: "暂无推荐动作",
+    more: "更多 {count} 项 ▾",
+    less: "收起 ▴",
+  },
+
+  actionGroup: {
+    verify: "查证",
+    transform: "转换",
+    export: "导出",
+    copy: "复制",
   },
 
   codecError: {
@@ -722,6 +741,14 @@ export const ZH = {
 
   actionLabel: {
     openInNewTab: "在新标签打开",
+    siteGithubIssues: "看 GitHub Issues",
+    siteGithubReleases: "看 GitHub Releases",
+    siteGithubClone: "复制 git clone 命令",
+    siteNpmInstall: "复制 npm install 命令",
+    siteYoutubeCopyId: "复制 YouTube 视频 ID",
+    siteBilibiliCopyBv: "复制 B 站 BV 号",
+    copyExifGps: "复制拍摄坐标",
+    viewExifGpsOsm: "在地图查看拍摄地",
     checkUrlscan: "用 URLScan 检查安全性",
     copyLink: "复制链接",
     copyText: "复制这段文本",

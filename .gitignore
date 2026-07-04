@@ -1,6 +1,4 @@
-# ---- Build artifacts / WASM 构建产物 ----
-public/*.wasm
-public/*.loader.js
+# ---- 构建中间产物（wasm 源码编译产物；public/ 下的成品 loader/wasm 纳入版本库随源码发布）----
 wasm/build/
 *.o
 *.wasm.map

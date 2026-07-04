@@ -236,6 +236,16 @@
   background: var(--accent-soft);
 }
 
+/* 外链动作（离站）：加 ↗ 标记 + 略沉的描边，与本地动作区分，呼应「点击才出去」。 */
+.action-chip--external::after {
+  content: "↗";
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+.action-chip--external {
+  border-style: dashed;
+}
+
 /* ============ 顶栏 / 状态栏玻璃 ============ */
 .topbar,
 .statusbar {

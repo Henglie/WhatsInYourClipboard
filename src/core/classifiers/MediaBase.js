@@ -31,10 +31,26 @@ export class MediaClassifier extends BaseClassifier {
     const detail = readImageDetail(item.bytes); // 位深/色彩类型/透明/动图帧数
     const exif = parseExif(item.bytes); // JPEG EXIF（含 GPS），非 JPEG 为 null
 
+    // 上下文感知动态动作（第三层）：EXIF 含 GPS 时，加「复制拍摄坐标 / 地图查看」。
+    // GPS 为 WGS84，可直接喂 OSM；隐私铁律照旧——只构造按钮，点击才出去。
+    const dynamicActions = [];
+    if (exif?.gps) {
+      const coord = `${exif.gps.lat.toFixed(6)}, ${exif.gps.lng.toFixed(6)}`;
+      dynamicActions.push(
+        { type: "copy", labelKey: "actionLabel.copyExifGps", template: coord },
+        {
+          type: "link",
+          labelKey: "actionLabel.viewExifGpsOsm",
+          url: `https://www.openstreetmap.org/?mlat=${exif.gps.lat}&mlon=${exif.gps.lng}#map=16/${exif.gps.lat}/${exif.gps.lng}`,
+        },
+      );
+    }
+
     return {
       actionKey: "media_image",
       subtitle: t("cls.image"),
       tplVars: { mime: item.mime, size: String(item.size) },
+      dynamicActions,
       render: (el) => {
         const img = document.createElement("img");
         img.src = url;

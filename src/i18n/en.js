@@ -17,6 +17,9 @@ export const EN = {
     ctaShortcutPrefix: "Press",
     ctaShortcut: "Press Ctrl + V",
     scrollHint: "Scroll down to see what it can recognize ↓",
+    tryHint: "Nothing on hand to copy? Try a sample first ——",
+    randomBtn: "Copy random data",
+    examplesLink: "See what it recognizes →",
     colSupported: "Recognized now",
     colPlanned: "Coming soon",
     footer: "Runs locally · Not a byte uploaded · Online features require a manual click",
@@ -25,6 +28,13 @@ export const EN = {
     hintNeedPerm: "The browser needs your permission to read the clipboard — just press Ctrl + V",
     btnNeedPerm: "Press the shortcut",
     hintReSwitch: "Language switched — paste again to see results in the new language",
+  },
+  mobile: {
+    sheetTitle: "Paste the content to inspect",
+    sheetHint: "Mobile browsers can't read the system clipboard. Long-press → Paste below, then tap Recognize.",
+    placeholder: "Long-press here and choose \"Paste\"",
+    cancel: "Cancel",
+    recognize: "Recognize",
   },
   status: {
     idle: "● Idle",
@@ -660,6 +670,15 @@ export const EN = {
     decodeFailed: "Decode failed: ",
     decodeWith: "Decode with {codec}",
     empty: "No actions available",
+    more: "{count} More ▾",
+    less: "Show Less ▴",
+  },
+
+  actionGroup: {
+    verify: "Verify",
+    transform: "Transform",
+    export: "Export",
+    copy: "Copy",
   },
 
   codecError: {
@@ -714,6 +733,14 @@ export const EN = {
 
   actionLabel: {
     openInNewTab: "Open in New Tab",
+    siteGithubIssues: "View GitHub Issues",
+    siteGithubReleases: "View GitHub Releases",
+    siteGithubClone: "Copy git clone Command",
+    siteNpmInstall: "Copy npm install Command",
+    siteYoutubeCopyId: "Copy YouTube Video ID",
+    siteBilibiliCopyBv: "Copy Bilibili BV ID",
+    copyExifGps: "Copy Shooting Coordinates",
+    viewExifGpsOsm: "View Shooting Location on Map",
     checkUrlscan: "Check with URLScan",
     copyLink: "Copy Link",
     copyText: "Copy Text",

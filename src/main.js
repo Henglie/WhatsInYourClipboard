@@ -18,8 +18,17 @@ import { renderMulti } from "./views/MultiView.js";
 import { renderToolMenu } from "./views/ToolMenu.js";
 import { hydrateGlass } from "./ui/liquidGlass.js";
 import { DataPack } from "./core/DataPack.js";
+import { ClipItem } from "./core/ClipboardItem.js";
 import { segmentText } from "./core/segment.js";
+import { openPasteSheet } from "./ui/pasteSheet.js";
+import { pickRandomSample } from "./core/demoData.js";
 import { t, applyHtmlLang } from "./i18n/i18n.js";
+
+// 移动端判定：无 clipboard.read（多数手机浏览器缺失）或触屏无鼠标 + 窄屏。
+// 命中则「点我查看」改走粘贴弹框（长按粘贴），因手机拿不到系统剪贴板。
+const IS_MOBILE =
+  !(navigator.clipboard && navigator.clipboard.read) ||
+  (matchMedia("(hover: none) and (pointer: coarse)").matches && innerWidth < 820);
 
 applyHtmlLang(); // 同步 <html lang> 到当前语言
 
@@ -32,6 +41,7 @@ const STATE = { EMPTY: "EMPTY", READING: "READING", READY: "READY", ERROR: "ERRO
 let current = STATE.EMPTY;
 let landingHandle = null;
 let currentClipboardItem = null; // 保存当前剪贴板项，用于语言切换后重新分类
+let lastRandom = null; // 上一条随机样例文本，连点随机不重复
 
 // 外壳只渲染一次，内容进 stage
 const shell = renderShell(root);
@@ -45,7 +55,17 @@ function fmtSize(n) {
 
 function showLanding() {
   current = STATE.EMPTY;
-  landingHandle = renderLanding(shell.stage, { onTrigger: handleRead });
+  landingHandle = renderLanding(shell.stage, {
+    onTrigger: handleRead,
+    // 「复制随机数据」按钮：随机取一条样例，复制进系统剪贴板并直接识别。
+    // 复制失败（无权限/非安全上下文）也不影响识别——识别只吃内存里的文本。
+    onRandom: async () => {
+      const s = pickRandomSample(lastRandom);
+      lastRandom = s.text;
+      try { await navigator.clipboard.writeText(s.text); } catch (_) { /* 复制失败静默，仍识别 */ }
+      ingestText(s.text);
+    },
+  });
   shell.setStatus({ state: t("status.idle"), type: "—", size: "" });
   hydrateGlass(shell.stage);
 }
@@ -56,7 +76,7 @@ async function showCandidate(view, result, rawText, ctx = {}) {
   view.renderTarget.innerHTML = "";
   view.actionsList.innerHTML = "";
   result.render(view.renderTarget);
-  await renderActions(view.actionsList, result.actionKey, result.tplVars || {}, ctx);
+  await renderActions(view.actionsList, result.actionKey, result.tplVars || {}, ctx, result.dynamicActions || []);
   // 文本类内容：在「下一步你要…」动作区附解码工具箱二级菜单（厚玻璃+加粗，与普通动作区分）
   const actionsSection = view.actionsList.parentElement;
   actionsSection.querySelectorAll(".toolbox").forEach((n) => n.remove());
@@ -69,6 +89,14 @@ async function showCandidate(view, result, rawText, ctx = {}) {
 
 async function handleRead() {
   if (current === STATE.READING) return;
+
+  // 移动端拿不到系统剪贴板（无 clipboard.read / 需手势且常被拒），改弹粘贴框：
+  // 用户长按粘贴到 textarea 再点识别，走 ingestText 通用链路。
+  if (IS_MOBILE) {
+    openPasteSheet(ingestText);
+    return;
+  }
+
   current = STATE.READING;
   shell.setStatus({ state: t("status.reading") });
 
@@ -118,6 +146,18 @@ async function ingestItems(items) {
     current = STATE.EMPTY;
     shell.setStatus({ state: t("status.idle") });
   }
+}
+
+/**
+ * 直接吃一段文本走识别链路（不碰系统剪贴板）。
+ * 复用点：① 移动端粘贴弹框提交；② #try= 直达链路；③ 主界面「随机样例」按钮。
+ * 与 ingestItems 等价，只是入参已是纯文本字符串。
+ */
+async function ingestText(text) {
+  if (!text || typeof text !== "string") return;
+  if (current !== STATE.EMPTY) showLanding(); // 已在结果页则先复位
+  const bytes = new TextEncoder().encode(text);
+  await ingestItems([new ClipItem({ bytes, mime: "text/plain", text })]);
 }
 
 /** 处理已读取的剪贴板项（语言切换时复用） */
@@ -243,4 +283,25 @@ function renderShellRefresh() {
   hydrateGlass(root);
 }
 
+// #try= 直达：外部（如「能识别什么」示例页的「用它试试」）可用
+//   #try=<Base64(UTF-8(文本))>  直接跳进来自动识别，无需手动粘贴。
+// 解出的是纯文本，走 ingestText 通用链路；解析失败则正常显示着陆页。
+function tryFromHash() {
+  const m = /[#&]try=([^&]+)/.exec(location.hash);
+  if (!m) return false;
+  try {
+    // base64url → base64，再 UTF-8 解码
+    const b64 = m[1].replace(/-/g, "+").replace(/_/g, "/");
+    const bin = atob(b64);
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    const text = new TextDecoder("utf-8").decode(bytes);
+    // 清掉 hash，避免刷新/分享时重复触发与泄露内容到地址栏历史
+    history.replaceState(null, "", location.pathname + location.search);
+    if (text && text.trim()) { ingestText(text); return true; }
+  } catch (_) { /* 非法 hash，忽略，照常显示着陆页 */ }
+  return false;
+}
+
+// 启动：优先处理 #try= 直达（示例页「用它试试」跳入），否则显示着陆页。
 showLanding();
+tryFromHash();
