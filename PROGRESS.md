@@ -230,6 +230,8 @@ bash wasm/build.sh            # 重编 WASM
   **交接备注**：P2 四层全部完成。后续新增动作只需在 actions.json / dynamicActions 里给对类型（或显式
   `def.group`），分组/外链标记/折叠会自动生效。所有外链动作新增时都要过一遍隐私铁律。
 
+- [ ] **深度动作外链 — 跳成熟开源在线工具（待定，2026-07-05 提出）**：本地工坊只覆盖基础加工，重型处理（视频真转码等）不引 ffmpeg.wasm（32MB + GitHub Pages 设不了 SharedArrayBuffer 所需 COOP/COEP 响应头，多线程版线上跑不起来）。改在媒体动作区加 `link` 按钮跳**开源 + 浏览器内本地处理**的成熟站，点击才出去、契合零外发招牌。候选：`squoosh.app`(Google 开源，图片压缩，不上传)、`vert.sh`(开源，浏览器内 WASM 转图片/音视频，不上传)。**只推本地处理、不上传的站**（要上传文件的如 CloudConvert 不推，免得打「零外发」的脸）；按钮上标注「本地处理·不上传」让用户放心。落点：actions.json 的 media_image/media_video/media_audio 加 link 动作 + actionLabel i18n 中英镜像。具体挂哪些站待作者拍板。
+
 - [ ] **P3 解码工具箱智能嗅探**：粘贴后后台跑所有可逆解码器，只浮出「能解出有意义结果」的（判定 = 可打印比例 + 有效 UTF-8 + 命中已知模式加权）+ 搜索框过滤。
 - [ ] **P4 继续搬运 ToolsFx 编码**（低优先，参考 `临时/ToolsFx/`）：
   - 古典密码 Hill/AutoKey/Manchester/Type7
