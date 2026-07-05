@@ -98,6 +98,7 @@ WhatsInYourClipboard/
 - **【最高优先】本会话工具链严重不可靠，必须用绝对路径 + 同进程读回**：根因疑为 `cd 中文路径` 后 cwd 被重置，导致相对路径的读/写落到错误位置；Edit/Write 多次报“成功”但磁盘未变，grep/bash/CDP 回显是旧值或别处文件，甚至启了 serving 旧目录的僵尸 http 服务器，据此一度误判“已提交/已完成”（实际 git 历史只到 `985b0af`，我汇报的多个 commit 根本不存在）。**铁律：①一切文件操作用绝对路径，不用 `cd`、不用相对路径；②改完立刻在同一条 node 命令里用绝对路径读回比对；③验证服务器先 curl 确认返回的就是磁盘最新内容；④git 状态以 `git -C <绝对路径> log/status` 为准。**
 - **工具回显偶发错乱（接手务必知道）**：本会话多次出现 Edit 报“成功”但实际没落盘、grep/bash 回显与磁盘不符、CDP 输出是旧值的情况，一度据此误判“已完成”。**唯一可信的真相源是 `node -e` 直接读文件**；改完关键文件（尤其 JSON/i18n）后用 node 读回确认，别信工具的成功回显。
 - **覆盖层遮罩别拦截底层指针**：Hex 整块遮罩 `.hex-mask`（`z-index:2`）曾绑自身 hover 揭示、且为防闪烁让揭示态也吃指针，结果它永久拦截底层 Hex 的滚动与字节 hover 联动（作者反馈「没法互动 hex 面板」）。正解：覆盖层恒 `pointer-events:none`（纯视觉层），hover 检测改挂外部宿主（`.pane--hex` 的 mouseenter/leave + focusin/out），遮罩从不吃事件，底层全程可交互。
+- **强结构识别别当兜底、优先级别输给弱推断**：纯 URL 曾被默认识别成「一段外语」——因为 URL 识别埋在兜底 `TextClassifier`（priority 10）的 parse 里，而 `ForeignLangClassifier`（priority 12）靠 `detectLang` 判「全是拉丁字母 → 英语」抢先命中（URL 的 latinRatio=1.0）。强结构、高置信的识别（URL/邮箱/IP）反被优先级更高的弱推断（一堆拉丁字母=外语）压过。正解：在 `normalize.js` 抽共享 `asPureUrl()`，URL 识别与「外语排除纯 URL」共用同一判断（`ForeignLangClassifier.match` 里 `if (asPureUrl(t)) return false`），避免逻辑分叉。新增邮箱/IP 等强结构分类器时同理，务必给足优先级或在外语/纯文本处让路。
 
 ---
 
