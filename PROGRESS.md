@@ -142,6 +142,7 @@ bash wasm/build.sh            # 重编 WASM
   - 移动端：`ui/pasteSheet.js`，`IS_MOBILE` 命中时弹 textarea 手动粘贴（手机拿不到系统剪贴板），不改着陆页 UI。
   - 随机数据：`core/demoData.js`（22 条样例池，连点不重复），LandingView 放 hero 之下需下滑才见。
 - [x] **GitHub Pages 部署上线（2026-07-05）**：`https://henglie.github.io/WhatsInYourClipboard/`。全相对路径，子路径部署零改动；legacy 构建器 `Deployment failed` → 改用 GitHub Actions 部署（`.github/workflows/deploy-pages.yml`，push main 自动重发），`.nojekyll` 防吞 `src/`。README 顶部加在线体验入口。
+- [x] **本地媒体工坊 — 深度动作（2026-07-05）**：识别之后能就地加工，全程 canvas 内存处理、零外发、零新依赖/体积。图片工坊 `imagelab`：转格式(PNG/JPEG/WebP)、有损质量滑块、最长边等比缩放(1920/1280/800)、旋转 90°/翻转，实时预览+输出体积增减对比、一键下载。视频抽帧 `videoframe`：内嵌 `<video>` 拖到某帧抓当前帧存 PNG/JPEG。`core/imageTools.js` `processImage()`、`ui/mediaLab.js`(按需 `import()`)；ActionEngine 加 `imagelab`/`videoframe` 两动作类型(归 export 组，无 `ctx.bytes` 不渲染)；接入 media_image/media_video。i18n `mediaLab.*` 22 键中英镜像。CDP 真机验证：PNG→JPEG+缩放/旋转宽高互换/全链路 drop→识别→开工坊 全过、零 JS 错误。**未引 ffmpeg.wasm**：32MB 违背零依赖，且 GitHub Pages 无法设 COOP/COEP 头→多线程版跑不起来(见踩坑)。
 
 ## ▍待办
 

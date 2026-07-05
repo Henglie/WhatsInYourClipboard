@@ -52,7 +52,7 @@ function labelOf(def) {
 const GROUPS = [
   { id: "verify", labelKey: "actionGroup.verify", types: ["link"] },
   { id: "transform", labelKey: "actionGroup.transform", types: ["decode"] },
-  { id: "export", labelKey: "actionGroup.export", types: ["download", "qr"] },
+  { id: "export", labelKey: "actionGroup.export", types: ["download", "qr", "imagelab", "videoframe"] },
   { id: "copy", labelKey: "actionGroup.copy", types: ["copy"] },
 ];
 const TYPE_GROUP = (() => {
@@ -172,6 +172,26 @@ function renderDef(def, env) {
       title.className = "decode-result__title";
       title.textContent = t("action.qrResult");
       box.append(title, canvas);
+      clearSiblings();
+      btn.classList.add("copied");
+    });
+    return btn;
+  } else if (def.type === "imagelab" || def.type === "videoframe") {
+    // 本地媒体工坊（零外发）：点击后在结果框里打开图片工坊 / 视频抽帧。
+    // 需要原始字节，无 ctx.bytes 时不渲染此按钮。
+    if (!ctx.bytes) return null;
+    const btn = document.createElement("button");
+    btn.className = "action-chip";
+    btn.setAttribute("data-glass", "chip");
+    btn.textContent = labelOf(def);
+    btn.addEventListener("click", async () => {
+      const box = ensureResultBox();
+      const lab = await import("../ui/mediaLab.js");
+      if (def.type === "imagelab") {
+        lab.openImageLab(box, ctx.bytes, ctx.mime, ctx.fileName);
+      } else {
+        lab.openVideoFrameLab(box, ctx.bytes, ctx.mime);
+      }
       clearSiblings();
       btn.classList.add("copied");
     });

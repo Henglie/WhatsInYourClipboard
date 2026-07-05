@@ -60,6 +60,10 @@
       "url": "https://tineye.com/"
     },
     {
+      "labelKey": "actionLabel.openImageLab",
+      "type": "imagelab"
+    },
+    {
       "labelKey": "actionLabel.downloadFile",
       "type": "download",
       "source": "bytes",
@@ -587,6 +591,10 @@
       "labelKey": "actionLabel.copyDuration",
       "type": "copy",
       "template": "{{duration}}"
+    },
+    {
+      "labelKey": "actionLabel.grabVideoFrame",
+      "type": "videoframe"
     },
     {
       "labelKey": "actionLabel.downloadVideo",

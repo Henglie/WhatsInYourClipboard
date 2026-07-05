@@ -1739,3 +1739,89 @@
   gap: 0.7rem;
   margin-top: 0.2rem;
 }
+
+/* ── 媒体工坊（图片加工 / 视频抽帧，全程本地）──────── */
+.medialab {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.medialab__preview,
+.medialab__video {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  margin: 0 auto;
+  border-radius: 10px;
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill);
+  object-fit: contain;
+}
+.medialab__info {
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  text-align: center;
+  min-height: 1.1em;
+}
+.medialab__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.medialab__row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+.medialab__label {
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  min-width: 3.2em;
+}
+.medialab__select {
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill-strong);
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+}
+.medialab__slider {
+  flex: 1;
+  min-width: 120px;
+  accent-color: var(--accent, #7aa2ff);
+}
+.medialab__qval {
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  min-width: 3em;
+  text-align: right;
+}
+.medialab__btngroup {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.medialab__toggle {
+  padding: 0.28rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-fill);
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.medialab__toggle:hover {
+  background: var(--glass-fill-strong);
+}
+.medialab__toggle.active {
+  border-color: var(--accent, #7aa2ff);
+  background: var(--glass-fill-strong);
+}
+.medialab__download {
+  align-self: flex-start;
+}
