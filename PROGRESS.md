@@ -1,7 +1,7 @@
 # PROGRESS · WhatsInYourClipboard（剪贴板里有什么？）
 
 > 项目进度与 AI 接管文档。**人看的介绍在 [README.md](./README.md)，本文件只给接手的 AI / 开发者。**
-> 最后更新：2026-07-04（v1.0 发布）
+> 最后更新：2026-07-05（v1.0 发布 + GitHub Pages 上线）
 
 ---
 
@@ -116,33 +116,32 @@ bash wasm/build.sh            # 重编 WASM
 
 ## ▍已完成
 
-- [x] 应用外壳、状态机、FairyGlass 液态玻璃 UI（含着陆页能力看板）。
-- [x] **分类器 40+ 个**：身份(身份证/手机/银行卡/IP/车牌)、结构化(JSON/CSV/Markdown/SQL/Cron/UA)、生活(地址/坐标/数学/ISBN/快递)、文化(古诗词/词牌/外语/emoji)、垂直(条码/分享码/三角洲改枪码)、文件(PE/ZIP/PDF/ELF/PEM)、媒体(图片/SVG)。
-- [x] **编码工具箱 46 项全部验证通过**：CODECS 23 项 + CIPHERS 40 项（ROT 系列/Atbash/Caesar/Vigenere/古典网格族/中式编码/CTF 编码等），支持编码/解码方向，菜单自动从注册表生成、按 cat 折叠。
-- [x] OllyDbg 风格自适应 Hex 表格（竖向滚动不横溢）+ 多内容智能分段。
-- [x] WASM 计算层：hexdump/sha256/md5/sha1/magic/PE 解析，selftest 11 项全过。
-- [x] **i18n 国际化全部完成**：行标签/动作标签/错误信息/参数标签全接入；语言切换不跳回主页；中/EN 顶栏切换；能力看板+hashPanel 已译。修复了 ToolMenu/culture 等多处变量遮蔽 bug。
-- [x] **移动端 + 文件入口（2026-06-23）**：除 `Ctrl+V` / `clipboard.read()` 外，新增 `paste` 事件（移动端长按粘贴，无需读权限）与**文件拖放**（页面任意处，隐形入口不改着陆页外观）。拖放是获取 .exe/二进制真实字节的唯一可靠途径（复制文件进剪贴板只有路径）。关键文件：`clipboard/reader.js` 新增 `itemsFromDataTransfer()`；`main.js` 新增 `ingestItems()` + paste/drop 监听。
-- [x] **控制字符显形（2026-06-23）**：解码结果含 `\0` 等控制符时不再被浏览器吞掉，渲染成 Unicode Control Pictures 字形（`␀ ␊ ␡`）。关键文件：`views/renderers/visibleText.js`，已接入 `ToolMenu.js` 与 `ActionEngine.js` 两个解码出口；CSS `.ctrl-char`（layout.css）。
-- [x] **PE 解析增强（2026-06-23）**：WASM 与 JS 回退两路径统一输出 i18n 键（修了英文模式 WASM 路径显示中文 arch 的 bug）；PE 卡片补 类型(EXE/DLL)/节区数/编译时间。关键文件：`wasm/bridge.js` parsePE、`classifiers/FileBase.js`。
-- [x] **车牌识别重写（2026-06-23）**：宽容识别 `贵A12345`/`贵 A12345`/`贵·A12345`/`贵-A 12345`（先 `normalizePlate()` 剥分隔符再严格匹配）；卡片显示**归属地**(城市上一级：直辖市=北京/上海，普通省=省份全称) + **发牌机关**(城市本身，京A→北京、琼B→三亚，拿不准的字母留空不瞎写)；支持新能源/教练/警车/挂车/港澳/使领馆/武警。**已去掉冗余的"省份简称"行**。关键文件：新增 `core/plate.js`（省份表+城市对照表 CITY），`classifiers/identity.js` PlateClassifier。注意正则坑见踩坑记录。
-- [x] **敏感信息遮罩 — 液态水纹（2026-06-23，2026-06-24 改水纹）**：打码值之外再蒙一层缓缓扩散的微蓝水纹涟漪（随机点冒起同心细环 + 内侧拖尾环，ease-out 扩散、sin 渐隐渐现，低透明度若隐若现，贴合液态玻璃质感），底下垫薄磨砂兜底。交互：**鼠标移上 / 键盘聚焦透出明文，移开 / 失焦立即恢复**（纯 hover，**无点击粘性**），带淡出过渡。关键文件：`views/renderers/blurReveal.js`（`makeRippleVeil` 水纹引擎，所有活跃层共用一条 rAF，脱离 DOM 自动注销，揭示态暂停省电），接入 `TextBase.js` 敏感分支；`infoCard.js` 支持值传 DOM 节点；CSS `.blur-reveal*`（layout.css:502）。水纹是功能性视觉，**恒动不被 `prefers-reduced-motion` 关停**（见踩坑）。
-- [x] **骨相 Hex 整块遮罩 — 同款液态水纹（2026-06-23，2026-06-24 改水纹）**：检出敏感信息时左侧 Hex「骨相」把原始字节摊开 = 明文泄露，故给整块蒙同款水纹遮罩（与右侧 blurReveal 共用 `makeRippleVeil` 引擎，纯 hover 揭示、移开立即恢复）。块级组件 `frostOverlay`（`blurReveal.js`），挂在 `.pane--hex`（relative）上盖住 `pane__body`（top:2rem 以下），自身不随内容滚动。**遮罩恒 `pointer-events:none`（纯视觉层），hover 检测挂在 `.pane--hex` host 上**——曾因遮罩吃指针导致 Hex 完全无法滚动/字节联动（见踩坑）。信号链：`result.sensitive=true`（TextBase 敏感分支 + identity 的身份证/手机/银行卡，IP/车牌不算个人隐私跳过）→ `main.js` 传 renderSplit；切候选用 `view.setHexMask(on)` 句柄按需挂摘。CSS `.hex-mask*`（layout.css:558）。CDP headless（强制 reduce）验证全过：水纹逐帧在画 + 纯 hover 揭示 + 移开立即恢复 + 零 JS 错误。
-- [x] **文本空白/分隔耐性（2026-06-24）**：真实剪贴常被空格/连字符/标签/全角污染（`138 1234 5678`、`身份证：1101...`、`链接：https://x 。`），严格 `^...$` 一律落空。新建 `core/normalize.js`（`stripSpacesDashes`/`toHalfWidth`/`stripLabel`/`extractUrl`），身份证/手机/银行卡 match 前先 `digitId()` 归一（手机额外剥 `+86`/`86`），URL 改抽取式（容忍标签前缀+尾部句读，维基括号保留）。关键文件：`classifiers/identity.js`、`TextBase.js`。22 项 node 自测全过。
-- [x] **媒体深挖 — EXIF/音频/视频（2026-06-24）**：新建 `core/mediaMeta.js` 纯字节解析（不解码整文件）：图片 JPEG EXIF（相机厂商型号/拍摄时间/光圈快门 ISO 焦距/**GPS 经纬度→接「在地图查看」**）、MP3 ID3v2 标签+帧头估比特率时长、WAV/FLAC 采样率声道位深时长、MP4/MOV box 解析（mvhd 时长+tkhd 分辨率）。MediaBase 图片卡补 EXIF 卡；新增 `AudioVideoClassifier`（priority 28，内嵌 `<audio>/<video>` 本地预览 + 参数卡 + ID3 标签卡）。CSS `.media-video/.media-audio`。23 项 node 自测全过（含修 tkhd 宽高偏移 bug：v0 应为 payload+76 而非 +84）。
-- [x] **识别面扩展 — MAC/IPv6/文件路径（2026-06-24）**：identity 新增 MAC 地址（冒号/连字符/点分，OUI/广播/组播/本地管理判定）、IPv6（含压缩 `::`、回环、链路本地、唯一本地、文档段判定）；新建 `core/path.js` + lifeView `PathClassifier`，识别 Windows(`C:\`)/UNC(`\\srv\`)/Unix(`/usr/`) 路径，拆盘符/层级/文件名/扩展名/类型推断——补上「剪贴板是路径时只识别成纯文本」的缺口。i18n 中英已镜像。CDP 验证四类识别全过。
-- [x] **遮罩动画恒动 + 改液态水纹（2026-06-24，作者反馈两轮）**：① 之前看不到动画的根因——`blurReveal.js` 在 `prefers-reduced-motion: reduce` 时**完全关停 rAF**（Windows 11 该系统设置常默认开启），动画彻底静止。改为**始终运行**，不被该偏好关停；CSS 层去掉对应的静态回退块。② 视觉从「TG 粒子噪点」改为**液态水纹涟漪**（作者要优雅、符合液态玻璃质感）：`makeSparkleVeil`→`makeRippleVeil`，随机点冒起同心细环、ease-out 扩散、sin 渐隐、低透明度若隐若现。CDP 强制 reduce 验证水纹逐帧在画（帧间 58932→61204）。
-- [x] **Hex 遮罩不挡交互修复（2026-06-24，作者反馈「没法互动 Hex 面板」）**：根因——`hex-mask` 遮罩 `z-index:2` 且曾为防 mouseleave 闪烁刻意「揭示态也捕获指针」，结果永久拦截左栏 Hex 的滚动与字节 hover 联动。改为遮罩**恒 `pointer-events:none`**（纯视觉层），hover/聚焦检测改挂宿主 `.pane--hex`（`frostOverlay({host})`，mouseenter/leave + focusin/out）。这样 Hex 全程可滚动可联动，移上 pane 遮罩淡出露字节。CDP 验证：`pe=none` + hover 联动可用 + 可滚动 + 移上揭示/移开恢复 + 零错误。
-- [x] **坐标识别放宽 + 图片深挖（2026-06-24）**：① `life.js` parseCoord 重写——容忍空格分隔（`39.9 116.4`）、方向前后缀（`N39.9 E116.4`）、度分秒 DMS（`39°54'30"N 116°23'30"E`），并收紧误报（纯整数对/单数字不再误判成坐标：要么带逗号/小数点/方向/度符号才认）；15 项 node 自测全过。② `imageInfo.js` 新增 `readImageDetail`——PNG 位深/色彩类型/透明/隔行/APNG 帧数、GIF 帧数+动图+透明、WebP 模式(有损/无损/扩展)+alpha+动画、JPEG 精度/分量(YCbCr/CMYK)/渐进；色彩类型/模式返回 i18n key（技术术语英文模式可译），MediaBase 图片卡补这些行。10 项 node 自测全过。
-- [x] **示例展示页（2026-06-23，进行中收尾）**：`examples/index.html` + `examples/data.js` + `examples/assets/`（FairyGlass 母本 tokens/glass/liquidGlass 拷贝）。按 7 大类侧栏导航，每类每种可识别类型举一个真实样例（身份证/银行卡/ISBN/EAN13 都是带正确校验位的真数据），点样例即复制。敏感信息卡已演示磨砂遮罩。用 Playwright 截图迭代过外观。
-- [x] **「下一步做什么」第一层落地（2026-06-24）**：actions.json 补齐 `media_audio`(复制曲名/搜网易云/复制时长)、`media_video`(复制分辨率/时长)、`id_mac`(查 OUI 厂商 macvendors/复制)、`id_ipv6`(ipinfo+ip138)、`life_path`(复制路径/文件名/父目录/explorer 命令)、`struct_csv`(复制为 Markdown 表格/原文)、`struct_ua`(在线解析/复制)、`id_plate`(复制号牌)、`file_pem`(复制完整 PEM) 共 62 个 actionKey；对应分类器补 tplVars（音视频 songQuery/dims/duration、path parent/winExplorer、csv markdown、ua、pem）；新增 14 个 actionLabel i18n 键（中英镜像）。隐私铁律照旧：id_card/id_phone/id_bankcard 仍空。CDP 真实浏览器验证 MAC/IPv6/路径/CSV/音频/PEM 动作全部正确渲染+插值无误+零错误。注：file_extended 的 hash 动作留给第三层动态注入（hash 异步算），暂空。
-- [x] **一键启动 + 示例直达 + 移动端粘贴 + 随机数据（2026-07-04）**：一次做完四件，一条主线串起——三个「喂文本」入口最终都汇入 `main.js` 的 `ingestText(text)` → 复用 `ingestItems` 识别链路，零重复逻辑。
-  - **一键启动脚本（最终为 Python 版）**：`start.py`（零依赖，仅标准库 http.server）——正确 MIME（`.wasm`→`application/wasm`、`.js/.mjs`→JS MIME，否则 ES module/WASM 加载失败）、no-cache 头（与 Go Live 一致，免缓存旧文件）、端口占用自动 +1、**强制探测 Chrome/Edge（Chromium）打开**（规避 Firefox 首帧现象，见踩坑），找不到提示装。三平台入口：`启动.bat`（Win，试 py→python）、`start.command`（macOS 双击）、`start.sh`（Linux/终端）。曾先做过 Node 版 `start.js`，因最终用 Python 且更好用而弃用删除。README 补「快速开始」+「浏览器兼容性」段。
-  - **示例页一键直达（任务1）**：`examples/index.html` 每张非拖放卡加「用它试试 →」（`.ex-try`），跳 `../index.html#try=<Base64url(UTF-8)>`；主 app 新增 `tryFromHash()` 解出文本直接走识别、并 `history.replaceState` 清 hash（防刷新重触发/泄露到历史）。编码解码对应（examples `b64urlEncode` 编 `-_`去`=` ↔ 主 app 解 `-_`→`+/` atob）。46 个链接（恰好排除 4 张 drop 卡），含中文车牌 UTF-8。
-  - **移动端粘贴弹框（任务2）**：新增 `ui/pasteSheet.js`。`main.js` 加 `IS_MOBILE` 判定（无 `clipboard.read` 或 `(hover:none)&&(pointer:coarse)&&窄屏`）→ 命中时「点我查看」不读系统剪贴板（手机拿不到），改弹 textarea + 「长按→粘贴」提示，提交走 `ingestText`。**不改着陆页大 UI**，仅按需弹出。
-  - **随机数据按钮（任务3）**：新增 `core/demoData.js`（22 条真实样例池 + `pickRandomSample` 连点不重复）。LandingView 加 `landing__tryrow`——放在 hero（`min-height:calc(100vh-120px)` 占满首屏）**之下**，需下滑才见，不喧宾夺主；「复制随机数据」随机取一条写剪贴板并识别（复制失败不影响识别），旁附「看它能识别什么 →」链到示例页。
-  - i18n 中英镜像新增 `landing.{tryHint,randomBtn,examplesLink}` + `mobile.*`（5 键）。主 app 无 `fg-btn`（那是 examples 的 glass.css），随机区/弹框按钮自带 `.landing__trybtn` 一套，配色走玻璃变量。
-  - 验证：全部改动 JS `node --check` 全过、zh/en landing+mobile 键完全镜像、`start.py` curl 验证 MIME/no-cache、Edge headless 截图验证发布态渲染正常（随机区 + 标题 + 玻璃折射）+ `#try=` 手机号直达 split 视图（未停着陆页）+ 弹框结构文案完整。
+> 说明：以下每条 = 功能结论 + 关键文件（行号可跳）。过程细节、验证记录不留（踩坑经验见「踩坑记录」节）。
+
+- [x] 应用外壳、状态机（EMPTY→READING→READY）、FairyGlass 液态玻璃 UI + 着陆页能力看板。
+- [x] **分类器 40+ 个**：身份(身份证/手机/银行卡/IP/IPv6/MAC/车牌)、结构化(JSON/CSV/Markdown/SQL/Cron/UA)、生活(地址/坐标/数学/ISBN/快递/文件路径)、文化(古诗词/词牌/外语/emoji)、垂直(条码/分享码/三角洲改枪码)、文件(PE/ZIP/PDF/ELF/PEM)、媒体(图片/SVG/音频/视频)。`classifiers/`。
+- [x] **编码工具箱 46 项**：CODECS 23 + CIPHERS 40（ROT 族/Atbash/Caesar/Vigenere/古典网格族/中式编码/CTF 编码），编解码双向，菜单从注册表自动生成、按 cat 折叠。`codec.js`/`ciphers.js`。
+- [x] OllyDbg 风格自适应 Hex 表格（竖向滚动不横溢）+ 多内容智能分段（`core/segment.js`）。
+- [x] WASM 计算层：hexdump/sha256/md5/sha1/magic/PE 解析，`selftest.mjs` 11 项全过。`wasm/`、`wasm/bridge.js`。
+- [x] **i18n 全量**：行标签/动作/错误/参数全接入，切换语言不跳回主页，中/EN 顶栏切换，能力看板+hashPanel 已译。`i18n/`。
+- [x] **多入口喂数据**：`Ctrl+V` / `clipboard.read()` + `paste` 事件（移动端长按，免权限）+ 文件拖放（页面任意处，隐形入口；拖放是拿二进制真实字节的唯一途径）。`clipboard/reader.js` `itemsFromDataTransfer()`、`main.js` `ingestItems()`。
+- [x] 控制字符显形：解码结果里 `\0` 等渲染成 Control Pictures 字形（`␀␊␡`）。`views/renderers/visibleText.js`。
+- [x] PE 解析：WASM/JS 双路径统一输出 i18n 键，卡片含类型(EXE/DLL)/节区数/编译时间。`wasm/bridge.js`、`classifiers/FileBase.js`。
+- [x] 车牌识别：宽容剥分隔符(`贵·A12345`/`贵-A 12345`)后严格匹配，显示归属地+发牌机关，支持新能源/教练/警车/挂车/港澳/使领馆/武警。`core/plate.js`、`classifiers/identity.js`。
+- [x] **敏感信息双层遮罩 — 液态水纹**：右侧值 + 左侧 Hex 骨相同蒙缓扩散水纹涟漪（`makeRippleVeil` 引擎，共用一条 rAF）。hover/聚焦透出明文、移开即恢复，无点击粘性。遮罩恒 `pointer-events:none`，hover 检测挂宿主。水纹是功能性视觉，恒动不被 `prefers-reduced-motion` 关停。`views/renderers/blurReveal.js`、layout.css:502/558。信号链见 `TextBase.js` 敏感分支 + identity。
+- [x] 文本污染耐性：空格/连字符/标签/全角一律先归一再匹配。`core/normalize.js`（`stripSpacesDashes`/`toHalfWidth`/`stripLabel`/`extractUrl`/`asPureUrl`）；身份证/手机/银行卡 `digitId()` 归一，URL 抽取式。
+- [x] 媒体深挖：纯字节解析(不解码整文件)——JPEG EXIF(相机/时间/光圈快门ISO焦距/GPS→地图)、MP3 ID3v2+比特率时长、WAV/FLAC 参数、MP4/MOV box(时长+分辨率)。`core/mediaMeta.js`、`AudioVideoClassifier`(priority 28) 内嵌预览。
+- [x] 识别面扩展 MAC/IPv6/文件路径：MAC(OUI/广播/组播判定)、IPv6(压缩`::`/回环/链路本地判定)、路径(Win/UNC/Unix 拆盘符层级文件名)。`core/path.js`、`PathClassifier`。
+- [x] 图片深挖：PNG 位深/色彩类型/APNG 帧、GIF 动图、WebP 模式/alpha、JPEG 精度/分量/渐进。`imageInfo.js` `readImageDetail`。
+- [x] 坐标识别放宽：空格分隔/方向前后缀/度分秒 DMS，收紧误报(纯整数对不认)。`life.js` parseCoord。
+- [x] 示例展示页：7 大类侧栏，每类举真实样例(校验位真实)，点即复制，演示遮罩。`examples/`。
+- [x] **「下一步做什么」动作引擎（P2 四层全完成）**——见「待办 P2」块存档。四类动作 `link`/`copy`/`download`/`qr`(纯本地零依赖二维码 `core/qrcode.js`)；上下文感知动态动作(`result.dynamicActions`：URL 站点专属 `core/siteActions.js`、图片 GPS→地图)；按意图分组(查证/转换/导出/复制)+外链 ↗ 标记+超阈值折叠。`ActionEngine.js`、`actions.json`。隐私铁律：id_card/id_phone/id_bankcard 动作永远空。
+- [x] **一键启动 + 示例直达 + 移动端粘贴 + 随机数据（2026-07-04）**：三个喂文本入口都汇入 `main.js` `ingestText()` → 复用识别链路。
+  - `start.py`（零依赖标准库 http.server）：正确 MIME(`.wasm`/`.js`)、no-cache、端口占用 +1、强制开 Chrome/Edge（规避 Firefox 首帧，见踩坑）。三平台入口 `启动.bat`/`start.command`/`start.sh`。
+  - 示例直达：示例卡「用它试试 →」跳 `#try=<Base64url>`，主 app `tryFromHash()` 解出即识别并 `replaceState` 清 hash。
+  - 移动端：`ui/pasteSheet.js`，`IS_MOBILE` 命中时弹 textarea 手动粘贴（手机拿不到系统剪贴板），不改着陆页 UI。
+  - 随机数据：`core/demoData.js`（22 条样例池，连点不重复），LandingView 放 hero 之下需下滑才见。
+- [x] **GitHub Pages 部署上线（2026-07-05）**：`https://henglie.github.io/WhatsInYourClipboard/`。全相对路径，子路径部署零改动；legacy 构建器 `Deployment failed` → 改用 GitHub Actions 部署（`.github/workflows/deploy-pages.yml`，push main 自动重发），`.nojekyll` 防吞 `src/`。README 顶部加在线体验入口。
 
 ## ▍待办
 
