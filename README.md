@@ -6,6 +6,10 @@
 极客风 · 纯前端 · 绝对隐私的剪贴板内容透视工具
 A geeky, pure-frontend, absolutely-private clipboard inspector.
 
+**[▶ 在线体验 · Live Demo](https://henglie.github.io/WhatsInYourClipboard/)**
+
+<sub>在线版走 HTTPS，剪贴板 API 全程可用；建议用 Chrome / Edge 打开以获得最佳玻璃质感。</sub>
+
 <br>
 
 <img src="docs/screenshots/landing.png" alt="着陆页 · Landing" width="49%"> <img src="docs/screenshots/result.png" alt="识别结果 · Result" width="49%">
