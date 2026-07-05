@@ -10,6 +10,7 @@ import { BaseClassifier } from "./BaseClassifier.js";
 import { buildInfoCard } from "../../views/renderers/infoCard.js";
 import { DataPack } from "../DataPack.js";
 import { detectLang } from "../lang.js";
+import { asPureUrl } from "../normalize.js";
 import { analyzePoetry } from "../poetry.js";
 import { t } from "../../i18n/i18n.js";
 
@@ -212,6 +213,9 @@ export class ForeignLangClassifier extends BaseClassifier {
     if (!item.isText) return false;
     const t = item.text.trim();
     if (t.length < 2 || t.length > 5000) return false;
+    // 纯 URL 全是拉丁字母会被 detectLang 误判为「英语」，抢在 URL 识别（TextClassifier）
+    // 前头。整串本质是链接时让路给 URL，不当外语处理。
+    if (asPureUrl(t)) return false;
     return detectLang(t).isForeign;
   }
 

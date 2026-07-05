@@ -64,3 +64,23 @@ export function extractUrl(s) {
   const hasContext = text.trim() !== url;
   return { url, hasContext };
 }
+
+/**
+ * 判断整串「本质就是一个链接」（而非夹了链接的正文）。
+ * 先剥字段标签，抽取首个 URL，剥掉后若只剩零星空白/句读则判定为纯 URL。
+ * 命中则返回该 URL 字符串，否则返回 null。
+ *
+ * URL 识别（TextClassifier）与「排除 URL 的外语误判」（ForeignLangClassifier）
+ * 共用此判断，避免两处逻辑分叉。
+ * @param {string} s
+ * @returns {string|null}
+ */
+export function asPureUrl(s) {
+  const labelStripped = stripLabel(s);
+  const ex = extractUrl(labelStripped);
+  if (!ex) return null;
+  const remainder = labelStripped
+    .replace(ex.url, "")
+    .replace(/[\s　.,;!?。，、；！？)）」】]/g, "");
+  return remainder === "" ? ex.url : null;
+}

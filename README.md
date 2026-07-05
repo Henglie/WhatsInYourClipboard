@@ -6,6 +6,12 @@
 极客风 · 纯前端 · 绝对隐私的剪贴板内容透视工具
 A geeky, pure-frontend, absolutely-private clipboard inspector.
 
+<br>
+
+<img src="docs/screenshots/landing.png" alt="着陆页 · Landing" width="49%"> <img src="docs/screenshots/result.png" alt="识别结果 · Result" width="49%">
+
+<sub>左：着陆页 · Landing　｜　右：URL 识别的骨相（Hex）× 皮相（渲染）分屏 · Split view</sub>
+
 </div>
 
 ---

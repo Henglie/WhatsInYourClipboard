@@ -13,7 +13,7 @@ import {
 } from "../../views/renderers/highlight.js";
 import { buildInfoCard } from "../../views/renderers/infoCard.js";
 import { blurReveal } from "../../views/renderers/blurReveal.js";
-import { extractUrl, stripLabel } from "../normalize.js";
+import { asPureUrl } from "../normalize.js";
 import { siteActions } from "../siteActions.js";
 import { t } from "../../i18n/i18n.js";
 
@@ -28,28 +28,24 @@ export class TextClassifier extends BaseClassifier {
     const text = item.text.trim();
 
     // 1. URL —— 容忍「链接：https://… 。」这类标签前缀与尾部句读：
-    //    先剥字段标签，再抽取首个 URL；若剥掉该 URL 后只剩零星标点/空白，
-    //    判定整串本质就是个链接（而非一段夹了链接的正文）。
-    const labelStripped = stripLabel(text);
-    const ex = extractUrl(labelStripped);
-    if (ex) {
-      const remainder = labelStripped.replace(ex.url, "").replace(/[\s　.,;!?。，、；！？)）」】]/g, "");
-      if (remainder === "") {
-        return {
-          actionKey: "text_url",
-          subtitle: t("cls.url"),
-          tplVars: { url: ex.url },
-          dynamicActions: siteActions(ex.url),
-          render: (el) => {
-            const a = document.createElement("a");
-            a.href = ex.url;
-            a.target = "_blank";
-            a.rel = "noopener noreferrer";
-            a.textContent = ex.url;
-            el.appendChild(a);
-          },
-        };
-      }
+    //    asPureUrl 剥字段标签 + 抽取首个 URL + 判断剥掉后是否只剩零星标点，
+    //    整串本质是链接才命中（外语分类器复用同一判断以让路给 URL）。
+    const pureUrl = asPureUrl(text);
+    if (pureUrl) {
+      return {
+        actionKey: "text_url",
+        subtitle: t("cls.url"),
+        tplVars: { url: pureUrl },
+        dynamicActions: siteActions(pureUrl),
+        render: (el) => {
+          const a = document.createElement("a");
+          a.href = pureUrl;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = pureUrl;
+          el.appendChild(a);
+        },
+      };
     }
 
     // 2. 敏感信息（只标类型 + 打码，不显明文）
