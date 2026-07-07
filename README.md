@@ -38,12 +38,15 @@ Everything runs locally inside the browser sandbox — **not a single byte is up
 
 ## 核心特性 · Features
 
-- **绝对隐私 / Absolute Privacy** — 纯本地沙箱运行，零上传。
+- **绝对隐私 / Absolute Privacy** — 纯本地沙箱运行，零上传；一切外链遵循「点击才出去」。
 - **骨相 × 皮相 / Hex × Render** — 左侧底层 Hex，右侧类型化渲染视图。
 - **液态玻璃 / Liquid Glass** — SVG 折射玻璃走 `filter:url()` 通道，在 Chromium 内核（Chrome / Edge）上表现最佳；轻盈有力的物理化交互动效（无回弹的玻璃滑停曲线）。
-- **OOP 识别树 / Classifier Tree** — 文本、文件、多媒体、编码脚本的瀑布流判定。
-- **WASM 高性能层 / WASM Core** — Hex Dump、Hash、PE 头解析等重计算下沉到 WebAssembly。
-- **JSON 动作引擎 / JSON Action Engine** — 「下一步你要…」按钮由配置驱动，支持外链查证、本地复制、解码、文件下载与**纯本地二维码**（零依赖、不外发）。
+- **OOP 识别树 / Classifier Tree** — 文本、文件、多媒体、编码脚本的瀑布流判定，支持多重解读。
+- **隐写透视 / Steganography X-ray** — 揪出肉眼看不见的隐藏字符（Unicode Tag 走私、变体选择器、零宽二进制、bidi 欺骗）并还原藏匿内容。
+- **编解码工具箱 / Codec Toolbox** — 35 编码 + 58 密码本地互转，含**接审计 C 库编译的重型加密**（AES/DES/3DES/RC4/ChaCha20/RSA/SM4/SM2）；进箱即智能嗅探、自动浮出可解候选。
+- **WASM 高性能层 / WASM Core** — Hex Dump、Hash、PE 头解析、重型密码算法下沉到 WebAssembly。
+- **JSON 动作引擎 / JSON Action Engine** — 「下一步你要…」按钮由配置驱动，支持外链查证、本地复制、解码、文件下载、**纯本地二维码**与上下文感知动态动作（零依赖、不外发）。
+- **本地媒体工坊 / Local Media Lab** — 图片转格式·缩放·旋转、视频抽帧，全程 canvas 内存处理。
 
 ---
 
@@ -108,20 +111,23 @@ It starts a local static server and **opens Chrome / Edge automatically** (liqui
 
 ## 开发状态 · Status
 
-**● v1.0 已发布 · v1.0 Released** — 核心功能全部实现并自检通过，可用于日常使用。后续版本继续搬运 [ToolsFx](https://github.com/Leon406/ToolsFx) 的完整编解码 / 密码学能力。
-All core features implemented and self-tested, ready for daily use. Later versions will keep porting the full codec / cryptography suite from [ToolsFx](https://github.com/Leon406/ToolsFx).
+**● v1.1 已发布 · v1.1 Released** — 识别、解码工具箱、深度动作、重型加密全部落地并自检通过，可日常使用。
+All features — recognition, the codec toolbox, deep actions, and heavy-weight cryptography — are implemented and self-tested, ready for daily use.
 
 **已完成 · Done**
-- 应用外壳、状态机、液态玻璃 UI（着陆页下方含能力看板）
-- 30+ 分类器（瀑布流 + 多重解读 classifyAll）：URL / 敏感信息打码 / JSON / 代码 / 身份证·手机·银行卡·IP·车牌 / 收货地址 / 坐标·地图 / 古诗词·词牌·外语 / 三角洲改枪码 / 商品条码 / 分享码 / 文件(PE·ZIP·PDF·ELF·证书等) / 图片(尺寸·主色调·双击放大·SVG)
-- OllyDbg 风格自适应 Hex 表格（竖向滚动、不横向溢出）
-- 多内容智能分段（多条结构化内容拆分，自然语言不拆）
-- 解码工具箱二级菜单（厚玻璃·选中蓝光）：36 种编码 / 古典密码本地解码，含 Base16/32/36/45/58/62/91/100、ASCII85、uu/xx、社会主义核心价值观、当铺、天干地支、百家姓、元素周期表、ROT8000 等
-- WASM 计算层：Hex Dump / PE 解析 / MD5 / SHA-1 / SHA-256（文件「计算哈希」面板）
-
-**进行中 · In Progress**
-- 继续搬运 ToolsFx 剩余编码（base69/92/2048、Z85、ecoji、radix 系列等）与 CTF 密码（盲文 / DNA / Brainfuck / Polybius / Playfair / ADFGX 等）
-- 重型加密（AES / RSA / SM2）将接经审计的 C 密码库编译为 WASM
+- 应用外壳、状态机、液态玻璃 UI（着陆页下方含能力看板）+ 完整 i18n（中/英）
+- **40+ 分类器**（瀑布流 + 多重解读 classifyAll）：URL / 敏感信息打码 / JSON·CSV·Markdown·SQL·Cron·UA / 身份证·手机·银行卡·IP·IPv6·MAC·车牌 / 收货地址 / 坐标·地图 / 数学·ISBN·快递·文件路径 / 古诗词·词牌·外语·emoji / 三角洲改枪码 / 商品条码 / 分享码 / 文件(PE·ZIP·PDF·ELF·证书) / 图片·音频·视频（EXIF·ID3·分辨率等深挖）
+- **隐写透视**：揪出肉眼看不见的隐藏字符——Unicode Tag 走私、变体选择器隐写、零宽二进制、bidi 视觉欺骗，还原藏进去的内容
+- OllyDbg 风格自适应 Hex 表格（竖向滚动、不横向溢出）+ 多内容智能分段
+- **解码工具箱**（厚玻璃·选中蓝光·智能嗅探自动浮出候选）：**35 种编码 + 58 种密码**本地解码
+  - 编码：Base16/32/36/45/58/62/64/91/100/2048/65536、ASCII85、uu/xx、ecoji、radix 系列、UTF-7、punycode 等
+  - 古典密码：ROT 族 / Atbash / Caesar / Vigenère / 网格族(Bifid·Trifid·Playfair·ADFGX·Nihilist·Hill 等)
+  - 中式趣味：社会主义核心价值观 / 当铺 / 天干地支 / 百家姓 / 元素周期表 / ROT8000
+  - CTF：盲文 / DNA / 摩尔斯 / Baudot / BubbleBabble / Brainfuck / Ook! / 零宽字符 / 凯撒盒 等
+  - **重型加密（接审计 C 库编 WASM，未手抄一行算法）**：AES / DES / 3DES / RC4 / ChaCha20 / RSA（mbedTLS）+ SM4 / SM2（GmSSL）
+- **「下一步你要…」动作引擎**：外链查证 / 本地复制 / 解码 / 文件下载 / 纯本地零依赖二维码；上下文感知动态动作（URL 站点专属、图片 GPS→地图）；按意图分组
+- **本地媒体工坊**：图片转格式·缩放·旋转、视频抽帧，全程 canvas 内存处理、零外发
+- WASM 计算层：Hex Dump / PE 解析 / MD5 / SHA-1 / SHA-256（`selftest.mjs` 11 项全过）
 
 ---
 
@@ -131,9 +137,13 @@ All core features implemented and self-tested, ready for daily use. Later versio
 
 The encoding & cryptography features are inspired by [**ToolsFx**](https://github.com/Leon406/ToolsFx) by [Leon406](https://github.com/Leon406) (ISC License), an excellent cross-platform cryptography toolbox. Many thanks for its comprehensive list of codecs and CTF tools.
 
-部分编解码算法移植自 [**CyberChef**](https://github.com/gchq/CyberChef)（© Crown Copyright，Apache-2.0 License）——GCHQ 出品的「网络瑞士军刀」。其纯 JavaScript 的算法实现为本项目的编码族移植提供了直接参考。详见 [NOTICE](./NOTICE) 文件中的署名声明。
+部分编解码算法移植自 [**CyberChef**](https://github.com/gchq/CyberChef)（© Crown Copyright，Apache-2.0 License）——GCHQ 出品的「网络瑞士军刀」。其纯 JavaScript 的算法实现为本项目的编码族移植提供了直接参考。
 
-Some codec algorithms are ported from [**CyberChef**](https://github.com/gchq/CyberChef) (© Crown Copyright, Apache-2.0 License), GCHQ's "Cyber Swiss Army Knife". See the [NOTICE](./NOTICE) file for attribution details.
+重型加密**不手抄任何密码算法**，一律接经审计的开源 C 密码库编译为 WASM：AES/DES/3DES/RC4/ChaCha20/RSA 用 [**Mbed TLS**](https://github.com/Mbed-TLS/mbedtls)（Apache-2.0），SM4/SM2 用 [**GmSSL**](https://github.com/guanzhi/GmSSL)（Apache-2.0）。上述所有第三方署名与许可证声明详见 [NOTICE](./NOTICE) 文件。
+
+Some codec algorithms are ported from [**CyberChef**](https://github.com/gchq/CyberChef) (© Crown Copyright, Apache-2.0 License), GCHQ's "Cyber Swiss Army Knife".
+
+Heavy-duty cryptography **hand-writes no cipher algorithm** — it compiles audited open-source C crypto libraries to WASM: [**Mbed TLS**](https://github.com/Mbed-TLS/mbedtls) (Apache-2.0) for AES/DES/3DES/RC4/ChaCha20/RSA, and [**GmSSL**](https://github.com/guanzhi/GmSSL) (Apache-2.0) for SM4/SM2. See the [NOTICE](./NOTICE) file for all third-party attributions and license notices.
 
 ---
 

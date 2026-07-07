@@ -1,0 +1,60 @@
+WhatsInYourClipboard (剪贴板里有什么？)
+Copyright (c) 2026 Henglie
+
+This product includes and/or derives from third-party open-source software.
+The applicable licenses and attributions are listed below. Full license texts
+are referenced by their SPDX identifiers; upstream projects are linked.
+
+================================================================================
+1. Mbed TLS  —  Apache-2.0 (dual-licensed Apache-2.0 OR GPL-2.0-or-later)
+================================================================================
+Portions of the cryptography compute layer are compiled from Mbed TLS 2.28.x
+C sources into the WebAssembly module shipped as public/core.loader.wasm.
+Used under the Apache-2.0 option of its dual license.
+
+    Copyright The Mbed TLS Contributors
+    https://github.com/Mbed-TLS/mbedtls
+    SPDX-License-Identifier: Apache-2.0
+
+Algorithms drawn from Mbed TLS: AES, DES/3DES, RC4, ChaCha20, RSA
+(PKCS#1 v1.5 / OAEP). No cryptographic primitive was hand-transcribed;
+the audited C library was compiled directly.
+
+================================================================================
+2. GmSSL  —  Apache-2.0
+================================================================================
+Portions of the cryptography compute layer are compiled from GmSSL 3.x
+C sources into the WebAssembly module shipped as public/core.loader.wasm.
+
+    Copyright The GmSSL Project Authors
+    https://github.com/guanzhi/GmSSL
+    SPDX-License-Identifier: Apache-2.0
+
+Algorithms drawn from GmSSL: SM4 (block cipher), SM2 (elliptic-curve
+public-key), SM3 (hash, as an SM2 dependency).
+
+================================================================================
+3. CyberChef  —  Apache-2.0
+================================================================================
+Some pure-JavaScript codec algorithms were ported/adapted from CyberChef
+into src/core/ (encoding & CTF codec families).
+
+    Copyright Crown Copyright (GCHQ)
+    https://github.com/gchq/CyberChef
+    SPDX-License-Identifier: Apache-2.0
+
+================================================================================
+4. ToolsFx  —  ISC
+================================================================================
+The design, algorithm selection, and codec/CTF tool inventory were guided by
+ToolsFx. Its Kotlin implementations served as a reference for the JavaScript
+codec ports; no ToolsFx source is redistributed in this repository.
+
+    Copyright (c) 2021, Leon406
+    https://github.com/Leon406/ToolsFx
+    SPDX-License-Identifier: ISC
+
+--------------------------------------------------------------------------------
+The WhatsInYourClipboard application code itself is licensed under the MIT
+License — see the LICENSE file.
+--------------------------------------------------------------------------------
