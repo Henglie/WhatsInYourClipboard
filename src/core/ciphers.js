@@ -31,6 +31,8 @@ import {
   twinHexDecode, twinHexEncode,
   caesarBoxDecode, caesarBoxEncode,
   fracMorseDecode, fracMorseEncode,
+  brainfuckDecode, brainfuckEncode,
+  ookDecode, ookEncode,
 } from "./ctfExtra.js";
 import {
   bifidEncode, bifidDecode,
@@ -414,6 +416,8 @@ export const CIPHERS = {
     fn: (t, p) => fracMorseDecode(t, p.key || "ROUNDTABLECFGHIJKMPQSVWXYZ"),
     encode: (t, p) => fracMorseEncode(t, p.key || "ROUNDTABLECFGHIJKMPQSVWXYZ"),
   },
+  brainfuck: { label: "BrainFuck", labelKey: "cipher.brainfuck", cat: "ctf", fn: brainfuckDecode, encode: brainfuckEncode },
+  ook: { label: "Ook!", labelKey: "cipher.ook", cat: "ctf", fn: ookDecode, encode: ookEncode },
   baudot: { label: "博多码 Baudot", labelKey: "cipher.baudot", cat: "ctf", fn: baudotDecode, encode: baudotEncode },
   bubbleBabble: { label: "Bubble Babble", labelKey: "cipher.bubbleBabble", cat: "ctf", fn: bubbleBabbleDecode, encode: bubbleBabbleEncode },
   emojiSubst: {

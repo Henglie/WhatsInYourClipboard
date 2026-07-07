@@ -44,10 +44,6 @@ export function getLang() {
   return currentLang;
 }
 
-export function getSupportedLangs() {
-  return [...SUPPORTED];
-}
-
 /**
  * 翻译。
  * @param {string} key   点分路径，如 "shell.brand"、"toolbox.title"

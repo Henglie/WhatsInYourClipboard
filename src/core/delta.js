@@ -49,7 +49,3 @@ export function parseDeltaCode(text, cfg) {
   };
 }
 
-/** 快速判断是否像改枪码（供 match 用） */
-export function looksLikeDeltaCode(text, cfg) {
-  return parseDeltaCode(text, cfg) !== null;
-}

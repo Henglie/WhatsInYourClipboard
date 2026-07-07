@@ -289,6 +289,15 @@ bash wasm/build.sh            # 重编 WASM
 - **M3(生命周期总闸) ✅** `main.js` 加模块级 `currentView` + `destroyCurrentView()`，在 `showLanding`(复位前) 与 `handleReadWithItem`(开头) 两入口调用，覆盖复位/切候选/语言切换(i18n:change 直接重渲不经 showLanding)/吃新文件全路径；`renderSplit` 返回值存 `currentView`。这是 M1/M2 真正生效的前提——子资源有了 destroy，还需宿主在重渲染时调它。
 - **M5 ✅** `deploy-pages.yml`：`path: .` → 白名单组装 `_site`（`cp index.html LICENSE README.md .nojekyll` + `cp -r css src public examples docs`）再上传。白名单而非 path+排除，从根上杜绝 `临时/`(ToolsFx/CyberChef 源)、`wasm/`(mbedTLS/GmSSL C 源)、内部文档(PROGRESS/bug-report)泄漏，即便 `git add -f 临时/` 也进不了产物。本地模拟 cp 验产物干净；运行时 WASM 走 `public/core.loader.js` 不碰被排除的 `wasm/` 源。新增站点资源须在 workflow 白名单登记。
 
+### 回归修复 + 死代码清理（2026-07-07 三轮，均经语法校验 + 往返自测）
+
+- **BrainFuck/Ook 功能回归修复**：PROGRESS 曾记「已注册进 ciphers.js（42 项）」，实为**半成品未接线**——`ctfExtra.js` 里 `brainfuckDecode/Encode`、`ookDecode/Encode` 实现俱全，但 `ciphers.js` 从未 import、i18n 无键，用户在工具箱里根本看不到。补齐：`ciphers.js` import + 注册 `brainfuck`/`ook`(cat:ctf，无参)，i18n `cipher.brainfuck`/`cipher.ook` 中英镜像。CIPHERS 42→**58 项**(注：42 是旧记，实测补前 56)。往返自测：`Hello World!` 经典程序解码正确、`flag{...}` 往返、Ook. 方言往返全绿。**教训**：PROGRESS 写「已注册」但没接线，靠 explore agent 全量 import 图谱扫出——记进度必须与代码同步核实，别信旧记。
+- **死代码清理（7 处，均经全局引用计数=1 确认仅定义、零调用）**：
+  - `zeroWidth.js` 三个 encode(`encodeTags`/`encodeVariationSelectors`/`encodeZeroWidthBinary`)——隐写透视定位是「侦测/还原」，不提供「制造隐藏字符」功能(且造 Unicode Tag 走私串有 LLM 提示注入滥用面)，encode 侧无 UI 归宿 → 删。decode 侧(`decodeTags`等，经 `decodeAll` 用)全保留，隐写侦测功能未动。
+  - `i18n.js` `getSupportedLangs`、`visibleText.js` `hasControlChars`、`delta.js` `looksLikeDeltaCode`、`codeLang.js` `runnableKind`——四个孤立死函数，删。
+- **未动(有意保留)**：~75 个 codec/cipher 函数「导出但无外部 import」是 explore agent 的删除误报——它们经 CODECS/CIPHERS 注册表 `tryDecode`/`tryCipher` 派发，是活代码，只是 export 面偏宽。收窄为非导出属纯表面工程，风险(误伤派发)>收益，不动。
+- **回归验证**：WASM selftest 11/11；全量往返 89 通过 / 4 已知跳过(rc4 流密码需密钥、brainfuck/ook 程序文本已单独验、base16x 有意丢零字节)；i18n zh/en 全段键数对齐(cipher/codec/cipherParam/cryptoParam/cryptoTool/sniffer/stego/mediaLab)；全部注册项 labelKey+参数键 100% 命中 i18n。
+
 ### 仍未修（低危，当前无害，待定夺）
 
 - **M3/L4** `main.js` `showLanding()` 未 await：内部 DOM 操作同步，当前无害；`#try=` 启动理论上 DOM 交错。低危。

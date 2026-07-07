@@ -224,6 +224,8 @@ export const ZH = {
     twinHex: "TwinHex 双子",
     caesarBox: "凯撒盒 CaesarBox",
     fracMorse: "分数莫尔斯",
+    brainfuck: "BrainFuck",
+    ook: "Ook!",
     aes: "AES",
     des: "DES",
     des3: "3DES（三重 DES）",

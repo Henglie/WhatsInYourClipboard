@@ -117,9 +117,6 @@ export function decodeTags(text) {
   if (!bytes.length) return null;
   return utf8Decode(bytes);
 }
-export function encodeTags(msg) {
-  return utf8Encode(msg).map((b) => String.fromCodePoint(0xe0000 + (b & 0x7f))).join("");
-}
 
 // —— 方案 B：变体选择器隐写（Paul Butler, 2024）——
 // 字节 0..15 → U+FE00 + b ；字节 16..255 → U+E0100 + (b-16)。可藏任意字节流。
@@ -131,11 +128,6 @@ export function decodeVariationSelectors(text) {
   }
   if (!bytes.length) return null;
   return utf8Decode(bytes);
-}
-export function encodeVariationSelectors(msg) {
-  return utf8Encode(msg)
-    .map((b) => String.fromCodePoint(b < 16 ? 0xfe00 + b : 0xe0100 + (b - 16)))
-    .join("");
 }
 
 // —— 方案 C：零宽二进制 —— ZWSP(U+200B)=0，ZWNJ(U+200C)=1，每 8 位一字节。
@@ -152,13 +144,6 @@ export function decodeZeroWidthBinary(text) {
   for (let i = 0; i + 8 <= bits.length; i += 8) bytes.push(parseInt(bits.slice(i, i + 8), 2));
   if (!bytes.length) return null;
   return utf8Decode(bytes);
-}
-export function encodeZeroWidthBinary(msg) {
-  return utf8Encode(msg)
-    .map((b) => b.toString(2).padStart(8, "0"))
-    .join("")
-    .replace(/0/g, "​")
-    .replace(/1/g, "‌");
 }
 
 /** 结果是否「像有意义的文本」：非空、可打印比例够高、无替换符。 */

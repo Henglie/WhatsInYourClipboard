@@ -213,6 +213,8 @@ export const EN = {
     twinHex: "TwinHex",
     caesarBox: "Caesar Box",
     fracMorse: "Fractional Morse",
+    brainfuck: "BrainFuck",
+    ook: "Ook!",
     aes: "AES",
     des: "DES",
     des3: "3DES (Triple DES)",

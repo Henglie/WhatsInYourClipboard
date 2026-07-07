@@ -264,11 +264,3 @@ export function detectCodeLang(text, minScore = 4) {
   return { ...top, candidates: scored.slice(0, 3) };
 }
 
-/**
- * 是否可在浏览器本地沙箱直接运行。
- * @returns {"html"|"css"|"js"|null}
- */
-export function runnableKind(langId) {
-  const l = LANGS.find((x) => x.id === langId);
-  return l ? l.runnable : null;
-}
