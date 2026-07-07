@@ -110,6 +110,9 @@ function makeRippleVeil(cls) {
     },
     pause() { paused = true; deactivate(inst); },
     resume() { paused = false; activate(inst); },
+    // 显式注销：停转 + 断开 canvas 尺寸监听。用于宿主主动销毁（重渲染），
+    // 不依赖 draw 循环里的 isConnected 兜底（若 canvas 从未进入 draw 循环则永不触发）。
+    destroy() { deactivate(inst); ro.disconnect(); },
   };
 
   // 入 DOM 后量好尺寸再起转（rAF 内首帧 isConnected 已为真）
@@ -168,7 +171,11 @@ export function blurReveal(text) {
  * @param {object} [opts]
  * @param {string} [opts.hint]  覆盖层上的居中提示文案
  * @param {HTMLElement} [opts.host]  绑定 hover 的宿主（通常是 .pane--hex）
- * @returns {HTMLElement} 覆盖层元素
+ * @returns {{ el: HTMLElement, destroy(): void }} 覆盖层元素 + 注销句柄。
+ *   destroy 一次性摘掉挂在 host 上的 4 个监听器（AbortController）并停转水纹。
+ *   host 上的监听器不会随 mask.remove() 自动清除，必须显式注销，否则宿主
+ *   （leftPane）虽被 innerHTML="" 剥离，其监听器闭包 + veil 的 ResizeObserver
+ *   仍持有 canvas 引用 → 视图无法回收（M2 泄漏根因）。
  */
 export function frostOverlay({ hint, host } = {}) {
   const mask = document.createElement("div");
@@ -190,12 +197,22 @@ export function frostOverlay({ hint, host } = {}) {
 
   // hover / 聚焦检测挂在 host 上（遮罩本身不吃事件）。host 进入即揭示，
   // 离开即恢复；host 内的 Hex 滚动、字节联动一切照常。
+  // 监听器统一挂到 AbortController.signal，destroy 时一次性摘除。
+  const ac = new AbortController();
   if (host) {
-    host.addEventListener("mouseenter", reveal);
-    host.addEventListener("mouseleave", hide);
-    host.addEventListener("focusin", reveal);
-    host.addEventListener("focusout", hide);
+    const o = { signal: ac.signal };
+    host.addEventListener("mouseenter", reveal, o);
+    host.addEventListener("mouseleave", hide, o);
+    host.addEventListener("focusin", reveal, o);
+    host.addEventListener("focusout", hide, o);
   }
 
-  return mask;
+  return {
+    el: mask,
+    destroy() {
+      ac.abort();       // 摘 host 上 4 个监听器
+      veil.destroy();   // 停转水纹 + 断开 canvas 尺寸监听
+      mask.remove();
+    },
+  };
 }

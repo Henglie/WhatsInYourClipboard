@@ -25,10 +25,19 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      # 白名单组装：只把站点运行必需的文件拷进 _site，再上传。
+      # 用白名单而非 path:. + 排除，可从根上杜绝第三方源码（临时/ 下的 ToolsFx/
+      # CyberChef、wasm/ 下的 mbedTLS/GmSSL C 源）与内部文档意外发到公开 Pages ——
+      # 即便有人 git add -f 临时/ 也进不了产物（M5 泄漏根因）。新增站点资源须在此登记。
+      - name: Assemble site (allowlist)
+        run: |
+          mkdir -p _site
+          cp index.html LICENSE README.md .nojekyll _site/
+          cp -r css src public examples docs _site/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

@@ -1825,3 +1825,107 @@
 .medialab__download {
   align-self: flex-start;
 }
+
+
+/* —— 智能嗅探区（进工具箱自动浮出有意义解码候选） —— */
+.sniffer {
+  margin-bottom: 1.2rem;
+}
+.sniffer--empty {
+  opacity: 0.85;
+}
+.sniffer__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--fg);
+  margin-bottom: 0.35rem;
+}
+.sniffer__title::before {
+  content: "\25C9";
+  color: var(--accent, #7a2fff);
+  font-size: 0.9em;
+}
+.sniffer__hint {
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  margin-bottom: 0.7rem;
+}
+.sniffer__empty {
+  font-size: 0.82rem;
+  color: var(--fg-muted, var(--fg-dim));
+  line-height: 1.6;
+  padding: 0.6rem 0.9rem;
+  border: 1px dashed var(--glass-stroke);
+  border-radius: 12px;
+  background: var(--glass-fill);
+}
+.sniffer__search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5em 0.9em;
+  margin-bottom: 0.7rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--glass-stroke);
+  background: var(--glass-fill);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+}
+.sniffer__search:focus {
+  outline: none;
+  border-color: var(--accent, #7a2fff);
+}
+.sniffer__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.sniffer__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25em;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6em 0.95em;
+  border-radius: 14px;
+  border: 1.5px solid var(--glass-stroke);
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 14px rgba(0, 0, 0, 0.28);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: transform var(--dur-quick) var(--ease-out-back),
+    border-color var(--dur-quick) var(--ease-out-quint),
+    box-shadow var(--dur-base) var(--ease-out-quint);
+}
+.sniffer__card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent, #7a2fff);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 8px 22px rgba(0, 0, 0, 0.34);
+}
+.sniffer__card.is-active {
+  border-color: var(--accent, #7a2fff);
+}
+.sniffer__card-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.sniffer__card-preview {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  color: var(--fg-dim);
+  word-break: break-all;
+  white-space: pre-wrap;
+  max-width: 100%;
+}

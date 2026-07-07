@@ -9,11 +9,14 @@ const td = (bytes) => new TextDecoder("utf-8").decode(new Uint8Array(bytes));
 const te = (str) => [...new TextEncoder().encode(str)];
 
 import { t } from "../i18n/i18n.js";
+import { radix10Decode, radix10Encode, radix64Decode, radix64Encode, base58CheckDecode, base58CheckEncode, utf7Decode, utf7Encode } from "./baseExtra.js";
+import { base2048Decode, base2048Encode, base65536Decode, base65536Encode, ecojiDecode, ecojiEncode } from "./bigBase.js";
 
 // ---------- 二进制 / 八进制 / 十进制（ASCII 码序列） ----------
 export function binaryDecode(text) {
   const bits = text.replace(/[^01]/g, "");
-  if (bits.length === 0 || bits.length % 8 !== 0) throw new Error(t("codecError.binaryNot8Aligned"));
+  if (bits.length === 0) return ""; // 空输入 → 空输出，与 encode("") 对称
+  if (bits.length % 8 !== 0) throw new Error(t("codecError.binaryNot8Aligned"));
   const bytes = [];
   for (let i = 0; i < bits.length; i += 8) bytes.push(parseInt(bits.slice(i, i + 8), 2));
   return td(bytes);
@@ -90,6 +93,11 @@ export function base62Decode(text, dict = B62) {
   while (num > 0n) {
     bytes.unshift(Number(num & 0xffn));
     num >>= 8n;
+  }
+  // 前导首字符 → 前导 0 字节（与 encode 对称，还原前导零字节）
+  for (const ch of s) {
+    if (ch === D[0]) bytes.unshift(0);
+    else break;
   }
   return td(bytes);
 }
@@ -193,8 +201,10 @@ export function punycodeDecode(text) {
     const oldi = i;
     let w = 1;
     for (let k = base; ; k += base) {
+      if (pos >= t.length) throw new Error("punycode: 输入意外结束");
       const c = t.charCodeAt(pos++);
       const digit = c - 48 < 10 ? c - 22 : c - 65 < 26 ? c - 65 : c - 97;
+      if (digit < 0 || digit >= base) throw new Error("punycode: 非法数字");
       i += digit * w;
       const tt = k <= bias ? tmin : k >= bias + tmax ? tmax : k - bias;
       if (digit < tt) break;
@@ -219,6 +229,7 @@ export function punycodeDecode(text) {
 // ---------- Base16 / Hex ----------
 export function hexDecode(text) {
   const s = text.trim().replace(/0x/gi, "").replace(/[\s,]/g, "");
+  if (s.length === 0) return "";
   if (s.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(s)) throw new Error(t("codecError.illegalHex"));
   const bytes = [];
   for (let i = 0; i < s.length; i += 2) bytes.push(parseInt(s.slice(i, i + 2), 16));
@@ -236,6 +247,11 @@ export function base36Decode(text) {
   }
   const bytes = [];
   while (num > 0n) { bytes.unshift(Number(num & 0xffn)); num >>= 8n; }
+  // 前导 '0' 字符 → 前导 0 字节（与 encode 对称）
+  for (const ch of s.toLowerCase()) {
+    if (ch === "0") bytes.unshift(0);
+    else break;
+  }
   return td(bytes);
 }
 
@@ -312,6 +328,7 @@ export function base16Encode(text, dict = B16) {
 // ---------- hexReverse（每字节两位 Hex 互换，魔改） ----------
 export function hexReverseDecode(text) {
   const s = text.trim().replace(/\s/g, "");
+  if (s.length === 0) return "";
   if (s.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(s)) throw new Error(t("codecError.illegalHex"));
   const out = [];
   for (let i = 0; i < s.length; i += 2) out.push(parseInt(s[i + 1] + s[i], 16));
@@ -342,17 +359,32 @@ export function base69Encode(text, dict = B69) {
 export function base69Decode(text, dict = B69) {
   const D = dict || B69;
   const s = text.trim();
+  if (s.length === 0) return "";
+  // 末尾标记：(AA)*(pad-1) + <pad 数字> + "="，恒长 2*pad。靠它精确反推原始字节数，
+  // 不能盲剥尾零（会把合法的   一起删掉）。
+  const eq = s.indexOf("=");
+  if (eq === -1) throw new Error(t("codecError.illegalBase69"));
+  const pad = parseInt(s[eq - 1], 10);
+  if (!(pad >= 1 && pad <= 7)) throw new Error(t("codecError.illegalBase69"));
+  const data = s.slice(0, eq - (2 * pad - 1)); // 去掉标记，留纯数据对
   let bin = "";
-  for (let i = 0; i + 2 <= s.length; i += 2) {
-    const pair = s.slice(i, i + 2);
-    if (pair.includes("=")) continue;
+  for (let i = 0; i + 2 <= data.length; i += 2) {
+    const pair = data.slice(i, i + 2);
     const val = 69 * D.indexOf(pair[1]) + D.indexOf(pair[0]);
     bin += val.toString(2).padStart(B69_CHUNK, "0");
   }
-  bin = bin.replace(/(?:00000000)*$/, "");
-  bin = bin.slice(0, Math.floor(bin.length / 8) * 8);
+  const pairs = Math.floor(data.length / 2);
+  // pad==7 → 原文长度整除 7（无余组）；否则末组 r=7-pad 字节
+  let n;
+  if (pad === 7) {
+    n = (pairs / 8) * 7;
+  } else {
+    const r = 7 - pad;               // 末组字节数 1..6
+    const tail = Math.ceil((r * 8) / 7); // 末组对数
+    n = ((pairs - tail) / 8) * 7 + r;
+  }
   const out = [];
-  for (let i = 0; i + 8 <= bin.length; i += 8) out.push(parseInt(bin.slice(i, i + 8), 2));
+  for (let i = 0; i < n; i++) out.push(parseInt(bin.slice(i * 8, i * 8 + 8), 2));
   return td(out);
 }
 
@@ -624,7 +656,6 @@ function radixNEncode(text, dict) {
   let num = 0n;
   for (const b of bytes) num = num * 256n + BigInt(b);
   let out = "";
-  if (num === 0n) out = dict[0];
   while (num > 0n) { out = dict[Number(num % radix)] + out; num /= radix; }
   // 前导零字节 → 前导首字符
   for (const b of bytes) { if (b === 0) out = dict[0] + out; else break; }
@@ -780,6 +811,18 @@ export const CODECS = {
     encode: base85IPv6Encode,
   },
   base100: { label: "Base100（emoji）", labelKey: "codec.base100", cat: "base", decode: base100Decode },
+  base58check: {
+    label: "Base58Check", labelKey: "codec.base58check", cat: "base",
+    params: [{ name: "dict", label: "customDict58", type: "text", default: B58 }],
+    decode: (t, p) => base58CheckDecode(t, (p && p.dict) || B58),
+    encode: (t, p) => base58CheckEncode(t, (p && p.dict) || B58),
+  },
+  base2048: { label: "Base2048", labelKey: "codec.base2048", cat: "base", decode: base2048Decode, encode: base2048Encode },
+  base65536: { label: "Base65536", labelKey: "codec.base65536", cat: "base", decode: base65536Decode, encode: base65536Encode },
+  ecoji: { label: "Ecoji（emoji）", labelKey: "codec.ecoji", cat: "base", decode: ecojiDecode, encode: ecojiEncode },
+  radix10: { label: "Radix10（十进制大整数）", labelKey: "codec.radix10", cat: "radix", decode: radix10Decode, encode: radix10Encode },
+  radix64: { label: "Radix64（crypt 表）", labelKey: "codec.radix64", cat: "base", decode: radix64Decode, encode: radix64Encode },
+  utf7: { label: "UTF-7", labelKey: "codec.utf7", cat: "web", decode: utf7Decode, encode: utf7Encode },
 
   binary: { label: "二进制", labelKey: "codec.binary", cat: "radix", decode: binaryDecode, encode: binaryEncode },
   octal: { label: "八进制", labelKey: "codec.octal", cat: "radix", decode: octalDecode, encode: octalEncode },

@@ -42,6 +42,16 @@ let current = STATE.EMPTY;
 let landingHandle = null;
 let currentClipboardItem = null; // 保存当前剪贴板项，用于语言切换后重新分类
 let lastRandom = null; // 上一条随机样例文本，连点随机不重复
+let currentView = null; // 当前 stage 视图句柄（SplitView），重渲染前须 destroy 释放其 ResizeObserver/host 监听器
+
+// 切换 stage 内容前调用：销毁上一个视图，释放它持有的 ResizeObserver（HexView）
+// 与 host 事件监听器（frostOverlay）。不显式销毁则语言切换/切候选/复位会累积泄漏。
+function destroyCurrentView() {
+  if (currentView && typeof currentView.destroy === "function") {
+    try { currentView.destroy(); } catch (_) { /* 销毁失败不阻断新视图渲染 */ }
+  }
+  currentView = null;
+}
 
 // 外壳只渲染一次，内容进 stage
 const shell = renderShell(root);
@@ -54,6 +64,7 @@ function fmtSize(n) {
 }
 
 function showLanding() {
+  destroyCurrentView(); // 复位前释放上一个视图
   current = STATE.EMPTY;
   landingHandle = renderLanding(shell.stage, {
     onTrigger: handleRead,
@@ -163,6 +174,8 @@ async function ingestText(text) {
 /** 处理已读取的剪贴板项（语言切换时复用） */
 async function handleReadWithItem(item) {
   try {
+    // 语言切换会直接重渲染（不经 showLanding），先销毁旧视图释放其 ResizeObserver/host 监听器。
+    destroyCurrentView();
     // 文本：先判断是否为多条独立内容
     if (item.isText) {
       const seg = segmentText(item.text);
@@ -205,6 +218,7 @@ async function handleReadWithItem(item) {
       },
       onReset: showLanding,
     });
+    currentView = view; // 记住句柄，下次重渲染前 destroyCurrentView 释放其 ResizeObserver/host 监听器
 
     await showCandidate(view, candidates[0].result, item.isText ? item.text : null, ctx);
     hydrateGlass(shell.stage);

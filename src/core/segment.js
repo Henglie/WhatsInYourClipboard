@@ -37,6 +37,14 @@ function isProseLine(line) {
   return false;
 }
 
+/** CJK 字符占比（不计空白）。诗词/对联无标点也应整段处理，靠此识别 */
+function cjkRatio(text) {
+  const chars = text.replace(/\s/g, "");
+  if (!chars.length) return 0;
+  const cjk = chars.match(/[㐀-䶿一-鿿豈-﫿]/g);
+  return (cjk ? cjk.length : 0) / chars.length;
+}
+
 /**
  * 分析文本是否为多条内容。
  * @param {string} text
@@ -69,6 +77,11 @@ export function segmentText(text) {
   // 含散文行 → 整段文本，不拆
   if (proseCount > 0) {
     return { multi: false, segments: [text.trim()], reason: "含自然语言段落，按整体处理" };
+  }
+
+  // 中文占比高的短文本（诗词/对联/多行短句）→ 整段文化内容，不拆
+  if (cjkRatio(text) >= 0.5) {
+    return { multi: false, segments: [text.trim()], reason: "中文整段内容，按整体处理" };
   }
 
   // 全是短行但非明显结构化：保守起见，若行数不多且都很短才拆

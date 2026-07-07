@@ -58,6 +58,7 @@ import {
   ChineseTextClassifier,
   ForeignLangClassifier,
 } from "./classifiers/culture.js";
+import { InvisibleStegoClassifier } from "./classifiers/InvisibleStego.js";
 import {
   BarcodeClassifier,
   ShareCodeClassifier,
@@ -133,6 +134,8 @@ const REGISTRY = [
   XmlClassifier,
   SqlClassifier,
   CodeClassifier,
+  // 不可见字符 / 零宽隐写（强信号，载体常是普通文本）
+  InvisibleStegoClassifier,
   // 文化语言（低优先级兜底）
   ForeignLangClassifier,
   ChineseTextClassifier,

@@ -220,4 +220,150 @@ export const WasmBridge = {
       timestamp,
     };
   },
+
+  /**
+   * 对称加解密（AES/DES/3DES/RC4/ChaCha20）。需 WASM，未加载返回 null。
+   * @param {object} o
+   * @param {"aes"|"des"|"des3"|"rc4"|"chacha20"} o.algo
+   * @param {"enc"|"dec"} o.op
+   * @param {Uint8Array} o.key
+   * @param {Uint8Array} [o.iv] CBC/CTR 或 ChaCha20 nonce(12B)
+   * @param {"ecb"|"cbc"|"ctr"} [o.mode="cbc"] 块密码模式（流密码忽略）
+   * @param {number} [o.counter=0] ChaCha20 初始计数器
+   * @param {boolean} [o.pad=true] ECB/CBC 是否 PKCS7
+   * @param {Uint8Array} o.data 明文或密文
+   * @returns {Uint8Array|{error:(number|string)}|null}
+   */
+  symCrypt({ algo, op, key, iv = new Uint8Array(0), mode = "cbc", counter = 0, pad = true, data }) {
+    if (!_mod) return null;
+    const ALGO = { aes: 1, des: 2, des3: 3, rc4: 4, chacha20: 5 };
+    const MODE = { ecb: 0, cbc: 1, ctr: 2 };
+    const a = ALGO[algo];
+    if (!a) return { error: "algo" };
+    const m = MODE[mode] ?? 1;
+    const encdec = op === "dec" ? 1 : 0;
+    const doPad = pad ? 1 : 0;
+    const outCap = data.length + 32; // 含 PKCS7 最多补一整块
+    const keyPtr = _mod._cb_malloc(key.length || 1);
+    const ivPtr = _mod._cb_malloc(iv.length || 1);
+    const inPtr = _mod._cb_malloc(data.length || 1);
+    const outPtr = _mod._cb_malloc(outCap);
+    try {
+      _mod.HEAPU8.set(key, keyPtr);
+      if (iv.length) _mod.HEAPU8.set(iv, ivPtr);
+      _mod.HEAPU8.set(data, inPtr);
+      const w = _mod._cb_sym_crypt(a, encdec, keyPtr, key.length, ivPtr, iv.length,
+                                   m, counter >>> 0, doPad, inPtr, data.length, outPtr, outCap);
+      if (w < 0) return { error: w };
+      return _mod.HEAPU8.slice(outPtr, outPtr + w);
+    } finally {
+      _mod._cb_free(keyPtr);
+      _mod._cb_free(ivPtr);
+      _mod._cb_free(inPtr);
+      _mod._cb_free(outPtr);
+    }
+  },
+
+  /**
+   * SM4 加解密（国密对称，128 位块）。需 WASM，未加载返回 null。
+   * @param {object} o
+   * @param {"enc"|"dec"} o.op
+   * @param {Uint8Array} o.key 16 字节密钥
+   * @param {Uint8Array} [o.iv] CBC/CTR 用 16 字节；ECB 传空
+   * @param {"ecb"|"cbc"|"ctr"} [o.mode="cbc"]
+   * @param {boolean} [o.pad=true] PKCS7（仅 ECB/CBC）
+   * @param {Uint8Array} o.data
+   * @returns {Uint8Array|{error:number}|null}
+   */
+  sm4Crypt({ op, key, iv = new Uint8Array(0), mode = "cbc", pad = true, data }) {
+    if (!_mod) return null;
+    const MODE = { ecb: 0, cbc: 1, ctr: 2 };
+    const m = MODE[mode] ?? 1;
+    const encdec = op === "dec" ? 1 : 0;
+    const doPad = pad ? 1 : 0;
+    const outCap = data.length + 32;
+    const keyPtr = _mod._cb_malloc(key.length || 1);
+    const ivPtr = _mod._cb_malloc(iv.length || 1);
+    const inPtr = _mod._cb_malloc(data.length || 1);
+    const outPtr = _mod._cb_malloc(outCap);
+    try {
+      _mod.HEAPU8.set(key, keyPtr);
+      if (iv.length) _mod.HEAPU8.set(iv, ivPtr);
+      _mod.HEAPU8.set(data, inPtr);
+      const w = _mod._cb_sm4_crypt(encdec, keyPtr, key.length, ivPtr, iv.length,
+                                   m, doPad, inPtr, data.length, outPtr, outCap);
+      if (w < 0) return { error: w };
+      return _mod.HEAPU8.slice(outPtr, outPtr + w);
+    } finally {
+      _mod._cb_free(keyPtr);
+      _mod._cb_free(ivPtr);
+      _mod._cb_free(inPtr);
+      _mod._cb_free(outPtr);
+    }
+  },
+
+  /**
+   * SM2 国密公钥加解密。需 WASM，未加载返回 null。
+   * @param {object} o
+   * @param {"enc"|"dec"} o.op enc=公钥加密 / dec=私钥解密
+   * @param {Uint8Array} o.key 加密:公钥 64B(x||y) 或 65B(04||x||y);解密:私钥 32B 大端
+   * @param {Uint8Array} o.data 加密:明文;解密:密文 C1C3C2(C1 可带/不带 04)
+   * @returns {Uint8Array|{error:number}|null}
+   */
+  sm2Crypt({ op, key, data }) {
+    if (!_mod) return null;
+    const isEnc = op === "dec" ? 0 : 1;
+    const outCap = data.length + 128; // 加密含 C1(65)+C3(32) 头;解密必小于密文
+    const keyPtr = _mod._cb_malloc(key.length || 1);
+    const inPtr = _mod._cb_malloc(data.length || 1);
+    const outPtr = _mod._cb_malloc(outCap);
+    try {
+      _mod.HEAPU8.set(key, keyPtr);
+      _mod.HEAPU8.set(data, inPtr);
+      const w = _mod._cb_sm2_crypt(isEnc, keyPtr, key.length, inPtr, data.length, outPtr, outCap);
+      if (w < 0) return { error: w };
+      return _mod.HEAPU8.slice(outPtr, outPtr + w);
+    } finally {
+      _mod._cb_free(keyPtr);
+      _mod._cb_free(inPtr);
+      _mod._cb_free(outPtr);
+    }
+  },
+
+  /**
+   * RSA 加解密。需 WASM，未加载返回 null。
+   * @param {object} o
+   * @param {"enc"|"dec"} o.op enc=公钥加密 / dec=私钥解密
+   * @param {boolean} [o.oaep=false] true=OAEP(SHA-1) / false=PKCS#1 v1.5
+   * @param {Uint8Array} o.key PEM(自动补结尾 NUL)或 DER 密钥
+   * @param {Uint8Array} o.data
+   * @returns {Uint8Array|{error:number}|null}
+   */
+  rsaCrypt({ op, oaep = false, key, data }) {
+    if (!_mod) return null;
+    let keyBytes = key;
+    const isPem = key.length > 10 && key[0] === 0x2d && key[1] === 0x2d; // 前导 --
+    if (isPem && key[key.length - 1] !== 0) {
+      keyBytes = new Uint8Array(key.length + 1); // 末位默认 0，即结尾 NUL
+      keyBytes.set(key);
+    }
+    const isEnc = op === "enc" ? 1 : 0;
+    const useOaep = oaep ? 1 : 0;
+    const outCap = 1024; // 支持到 RSA-8192 模长
+    const keyPtr = _mod._cb_malloc(keyBytes.length);
+    const inPtr = _mod._cb_malloc(data.length || 1);
+    const outPtr = _mod._cb_malloc(outCap);
+    try {
+      _mod.HEAPU8.set(keyBytes, keyPtr);
+      _mod.HEAPU8.set(data, inPtr);
+      const w = _mod._cb_rsa_crypt(isEnc, useOaep, keyPtr, keyBytes.length,
+                                   inPtr, data.length, outPtr, outCap);
+      if (w < 0) return { error: w };
+      return _mod.HEAPU8.slice(outPtr, outPtr + w);
+    } finally {
+      _mod._cb_free(keyPtr);
+      _mod._cb_free(inPtr);
+      _mod._cb_free(outPtr);
+    }
+  },
 };

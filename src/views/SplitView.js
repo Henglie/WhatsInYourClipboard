@@ -65,20 +65,22 @@ export function renderSplit(root, { subtitle, bytes, candidates = [], sensitive 
   leftBody.className = "pane__body card";
   leftBody.setAttribute("data-glass", "panel");
   leftPane.append(leftLabel, leftBody);
-  // Hex 表格延迟到容器入 DOM 后渲染（需要 clientWidth）
-  requestAnimationFrame(() => renderHexView(leftBody, bytes));
+  // Hex 表格延迟到容器入 DOM 后渲染（需要 clientWidth）。
+  // 捕获句柄，重渲染时 destroy 释放其 ResizeObserver（否则语言切换/切候选累积泄漏）。
+  let hexHandle = null;
+  requestAnimationFrame(() => { hexHandle = renderHexView(leftBody, bytes); });
 
   // 敏感内容：右侧打了码，左侧 Hex 把原始字节全摊开 = 明文泄露。给整块
   // 「骨相」蒙一层无缝磨砂玻璃（点击解除、移开恢复），与右侧 blurReveal 一致。
   // 覆盖层挂在 leftPane（relative），盖住 leftBody（top:2rem 以下），本身不随内容滚动。
   // 切候选时可能从敏感↔不敏感，按需挂/摘覆盖层（句柄 setHexMask）。
-  let hexMask = null;
+  let hexMask = null; // frostOverlay 句柄 { el, destroy }
   const setHexMask = (on) => {
     if (on && !hexMask) {
       hexMask = frostOverlay({ hint: t("view.hexMasked"), host: leftPane });
-      leftPane.appendChild(hexMask);
+      leftPane.appendChild(hexMask.el);
     } else if (!on && hexMask) {
-      hexMask.remove();
+      hexMask.destroy(); // 摘 host 监听器 + 停水纹 + 移除元素
       hexMask = null;
     }
   };
@@ -117,5 +119,11 @@ export function renderSplit(root, { subtitle, bytes, candidates = [], sensitive 
     actionsList,
     setSubtitle: (s) => { sub.textContent = t("view.answerPrefix") + s; },
     setHexMask,
+    // 宿主重渲染前调用：释放 Hex 的 ResizeObserver + 遮罩的 host 监听器/水纹，
+    // 否则语言切换/切候选/复位反复重建，旧 observer 与监听器累积泄漏。
+    destroy() {
+      hexHandle?.destroy();
+      setHexMask(false);
+    },
   };
 }

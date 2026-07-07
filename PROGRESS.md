@@ -99,6 +99,7 @@ WhatsInYourClipboard/
 - **工具回显偶发错乱（接手务必知道）**：本会话多次出现 Edit 报“成功”但实际没落盘、grep/bash 回显与磁盘不符、CDP 输出是旧值的情况，一度据此误判“已完成”。**唯一可信的真相源是 `node -e` 直接读文件**；改完关键文件（尤其 JSON/i18n）后用 node 读回确认，别信工具的成功回显。
 - **覆盖层遮罩别拦截底层指针**：Hex 整块遮罩 `.hex-mask`（`z-index:2`）曾绑自身 hover 揭示、且为防闪烁让揭示态也吃指针，结果它永久拦截底层 Hex 的滚动与字节 hover 联动（作者反馈「没法互动 hex 面板」）。正解：覆盖层恒 `pointer-events:none`（纯视觉层），hover 检测改挂外部宿主（`.pane--hex` 的 mouseenter/leave + focusin/out），遮罩从不吃事件，底层全程可交互。
 - **强结构识别别当兜底、优先级别输给弱推断**：纯 URL 曾被默认识别成「一段外语」——因为 URL 识别埋在兜底 `TextClassifier`（priority 10）的 parse 里，而 `ForeignLangClassifier`（priority 12）靠 `detectLang` 判「全是拉丁字母 → 英语」抢先命中（URL 的 latinRatio=1.0）。强结构、高置信的识别（URL/邮箱/IP）反被优先级更高的弱推断（一堆拉丁字母=外语）压过。正解：在 `normalize.js` 抽共享 `asPureUrl()`，URL 识别与「外语排除纯 URL」共用同一判断（`ForeignLangClassifier.match` 里 `if (asPureUrl(t)) return false`），避免逻辑分叉。新增邮箱/IP 等强结构分类器时同理，务必给足优先级或在外语/纯文本处让路。
+- **punycode 对纯 base36 数字串死循环**：`punycodeDecode` 无 `xn--` 前缀、纯数字(如 `1234567890123456`)时，内层解码循环 `pos` 越界后 `charCodeAt` 返 NaN → `digit<tt` 恒 false 永不 break。孤立看无害，但 sniffer 会把 punycode 纳入无参嗅探，用户粘纯数字进工具箱→整页卡死。正解：读字符前判 `pos>=t.length` 就抛「输入意外结束」，交给 sniffer 的 try/catch 吞掉。`codec.js:194`。
 
 ---
 
@@ -143,6 +144,8 @@ bash wasm/build.sh            # 重编 WASM
   - 随机数据：`core/demoData.js`（22 条样例池，连点不重复），LandingView 放 hero 之下需下滑才见。
 - [x] **GitHub Pages 部署上线（2026-07-05）**：`https://henglie.github.io/WhatsInYourClipboard/`。全相对路径，子路径部署零改动；legacy 构建器 `Deployment failed` → 改用 GitHub Actions 部署（`.github/workflows/deploy-pages.yml`，push main 自动重发），`.nojekyll` 防吞 `src/`。README 顶部加在线体验入口。
 - [x] **本地媒体工坊 — 深度动作（2026-07-05）**：识别之后能就地加工，全程 canvas 内存处理、零外发、零新依赖/体积。图片工坊 `imagelab`：转格式(PNG/JPEG/WebP)、有损质量滑块、最长边等比缩放(1920/1280/800)、旋转 90°/翻转，实时预览+输出体积增减对比、一键下载。视频抽帧 `videoframe`：内嵌 `<video>` 拖到某帧抓当前帧存 PNG/JPEG。`core/imageTools.js` `processImage()`、`ui/mediaLab.js`(按需 `import()`)；ActionEngine 加 `imagelab`/`videoframe` 两动作类型(归 export 组，无 `ctx.bytes` 不渲染)；接入 media_image/media_video。i18n `mediaLab.*` 22 键中英镜像。CDP 真机验证：PNG→JPEG+缩放/旋转宽高互换/全链路 drop→识别→开工坊 全过、零 JS 错误。**未引 ffmpeg.wasm**：32MB 违背零依赖，且 GitHub Pages 无法设 COOP/COEP 头→多线程版跑不起来(见踩坑)。
+
+- [x] **隐写透视 — 不可见字符侦测（2026-07-05）**：「剪贴板透视」的暗面。粘一段看似普通的文字，揪出肉眼看不见的隐藏字符并还原藏进去的内容。覆盖四类：① Unicode Tag 走私(U+E0000–E007F，LLM 提示注入常用)② 变体选择器隐写(Paul Butler 2024，U+FE00–FE0F/E0100–E01EF 藏任意字节)③ 零宽二进制(U+200B=0/U+200C=1)④ bidi 双向覆盖视觉欺骗(U+202A–202E 等，让 gpj.exe 显示成 exe.jpg)。输出：净化后可见文本、解出的隐藏消息、逐字符明细(hex+名称+位置)。三动作全纯本地(复制隐藏消息/净化文本/明细报告)，零外链契合隐私铁律。core/zeroWidth.js(detect/decodeAll/isStego，源码内不可见字符全用转义书写)、classifiers/InvisibleStego.js(priority 48，抢在文化/文本兜底前、不抢身份类)。isStego 阈值：tag>0 或 bidi 或 零宽≥4(排除 emoji ZWJ)或 变体选择器≥4。i18n stego.* 16 键+cls.invisibleStego+3 actionLabel 中英镜像。CDP 真机验证：Tag 走私解出明文/bidi/零宽二进制/变体选择器四场景全过、普通中英文/emoji ZWJ/URL/零星零宽 四类零误报、零 JS 错误。（补记：stego_invisible 动作曾因工具回显假成功一度未真正落盘，全量体检 actions 键数比对才发现，已补齐并 CDP 复验 3 动作渲染点击生效；教训——批量改 JSON 后必须核键数，别信回显。）- [x] **BrainFuck / Ook! 解释器（2026-07-05，P4 CTF 编码搬运）**：CTF 高频。同一个解释器覆盖两种（Ook! 是 BrainFuck 的三词方言，Ook./Ook?/Ook! 组合映射 8 指令）。规范明确 8 指令（`><+-.,[]`），30000 单元磁带、字节回绕、死循环守卫（步数上限）、括号不配对报错。经典 `Hello World!` 程序解码正确、往返验证多组（含 `flag{...}`）通过。`core/ctfExtra.js` 加 `brainfuckDecode/Encode`、`ookDecode/Encode`；`ciphers.js` 注册 `brainfuck`/`ook`（cat:ctf，共 42 项）；i18n `cipher.brainfuck`/`cipher.ook` 中英镜像。嗅探不误纳（需特定语法）。逻辑层全绿，CDP 真机验证未跑（作者免测）。
 
 ## ▍待办
 
@@ -230,14 +233,68 @@ bash wasm/build.sh            # 重编 WASM
   **交接备注**：P2 四层全部完成。后续新增动作只需在 actions.json / dynamicActions 里给对类型（或显式
   `def.group`），分组/外链标记/折叠会自动生效。所有外链动作新增时都要过一遍隐私铁律。
 
-- [ ] **深度动作外链 — 跳成熟开源在线工具（待定，2026-07-05 提出）**：本地工坊只覆盖基础加工，重型处理（视频真转码等）不引 ffmpeg.wasm（32MB + GitHub Pages 设不了 SharedArrayBuffer 所需 COOP/COEP 响应头，多线程版线上跑不起来）。改在媒体动作区加 `link` 按钮跳**开源 + 浏览器内本地处理**的成熟站，点击才出去、契合零外发招牌。候选：`squoosh.app`(Google 开源，图片压缩，不上传)、`vert.sh`(开源，浏览器内 WASM 转图片/音视频，不上传)。**只推本地处理、不上传的站**（要上传文件的如 CloudConvert 不推，免得打「零外发」的脸）；按钮上标注「本地处理·不上传」让用户放心。落点：actions.json 的 media_image/media_video/media_audio 加 link 动作 + actionLabel i18n 中英镜像。具体挂哪些站待作者拍板。
+- [x] **深度动作外链 — 跳成熟开源本地处理站（2026-07-05）**：识别为媒体后可就近跳成熟开源、```浏览器内本地处理```的在线工具，点击才出去、契合零外发。经 GitHub API 一手核实处理位置后落地：media_image 加 Squoosh(`squoosh.app`，Google 开源 Apache-2.0，图片本地压缩/转格式) + VERT(`vert.sh`，AGPL-3.0，本地 WASM 转图片) 两条 `link`；media_audio 加 VERT(本地 WASM 转音频)。均 `group:"export"` 归「导出」组、与本地工坊并列，文案标「本地·不上传」。**视频不加**：VERT 视频走服务端上传、ffmpeg.wasm 是库非成品站，无合格零上传站，宁缺勿打脸。落点：`actions.json` media_image/media_audio + i18n `actionLabel.squooshImage/vertConvertImage/vertConvertAudio`(中英镜像)。CDP 真机验证：分组归位、`↗` 外链标记、href、零 JS 错误全过。**只推不上传的站**（CloudConvert 等服务端转换一律不推）——见记忆「外链隐私边界」
 
-- [ ] **P3 解码工具箱智能嗅探**：粘贴后后台跑所有可逆解码器，只浮出「能解出有意义结果」的（判定 = 可打印比例 + 有效 UTF-8 + 命中已知模式加权）+ 搜索框过滤。
-- [ ] **P4 继续搬运 ToolsFx 编码**（低优先，参考 `临时/ToolsFx/`）：
-  - 古典密码 Hill/AutoKey/Manchester/Type7
-  - CTF：BauDot/BrainFuck/Ook/BubbleBabble/EmojiSubstitution/Zero1248/零宽字符
-  - base 变体：base58check/base65536/base2048/ecoji/radix 系列/utf7
-  - 重型加密（**接审计过的 C 密码库编 WASM，不手抄**）：AES/DES/3DES/SM4/RSA/SM2/ChaCha/RC4
+- [x] **P3 解码工具箱智能嗅探（2026-07-05）**：进工具箱自动把所有免密钥解码器（无参、含默认码表的 CODECS+CIPHERS，排除全列举型）跑一遍，只浮出「解出有意义结果」的候选卡，点卡即复用 runTool 选中该工具。判定三闸门+加权：可打印比例≥0.8、UTF-8 有效（无 U+FFFD）为闸门，得分主体是模式命中（URL/邮箱/JSON/CTF flag/常见英文词），codec 干净解码给 0.15 先验、cipher 不给（替换密码太易凑可打印串），阈值 0.35。含搜索框按工具名/结果过滤。关键文件：`core/sniffer.js`（`sniff()` 纯逻辑）、`views/ToolMenu.js`（顶部嗅探区，卡片点击复用 runTool）、i18n `sniffer.*` 4 键镜像、layout.css `.sniffer*` 样式。CDP 真机验证：base64 串→浮出 Base64 卡解出明文、点卡结果区正确、搜索过滤生效、卡片激活态+玻璃层正常、零 JS 错误。
+- [~] **P4 继续搬运 ToolsFx 编码**（参考 `临时/ToolsFx/`）：
+  - [x] 古典密码 Hill/AutoKey/Manchester/Type7 —— 见下「P4 纯 JS 批」
+  - [x] CTF：BauDot/BubbleBabble/EmojiSubstitution/Zero1248 ｜ BrainFuck/Ook ✓ ｜ 零宽字符 ✓
+  - [x] base 变体：base58check/base65536/base2048/ecoji/radix10/radix64/utf7 —— 见下「P4 纯 JS 批」
+  - [x] 重型加密（**接审计过的 C 密码库编 WASM，不手抄**）：AES/DES/3DES/RC4/ChaCha20/RSA(mbedTLS) + SM4/SM2(GmSSL) 全部完成 —— 见下「P4 重型加密 WASM」
+
+- [x] **P4 纯 JS 批（2026-07-07 完成）**：15 算法（Hill/AutoKey/Manchester/Type7 + Baudot/BubbleBabble/EmojiSubst/Zero1248 + radix10/radix64/base58check/base2048/base65536/ecoji/utf7），源码 4 模块 + 注册 + i18n 全落盘、node 往返验证。
+  - **4 模块**：`classicalExtra.js`(hill/autokey/manchester/type7)、`ctfEncodings.js`(baudot/bubbleBabble/emojiSubst/zero1248)、`baseExtra.js`(radix10/radix64/base58check/utf7，自带纯 JS 同步 SHA-256)、`bigBase.js`(base2048/base65536/ecoji，超大码表 node 从 Kotlin 机械抽取)。均含权威向量验证。
+  - **注册**：`ciphers.js` 48 项(新增 hill/autokey→classic，manchester/type7/baudot/bubbleBabble/emojiSubst/zero1248→ctf)；`codec.js` 35 项(新增 7 codec)。
+  - **i18n**：zh/en 三段键数对齐(cipher 48/codec 35/cipherParam 15)，named export `ZH`/`EN` 读回核过。
+  - **sniffer**：7 新 codec 全 sniffable，12 例非目标输入(URL/明文/纯数字/base64/中文/JSON/hex/邮箱/flag/标点等)零误报；6 codec 正向能浮出(score 1.00)；utf7 对纯 ASCII 编码恒等于原文→被「等于没解」跳过，设计固有局限非 bug。
+  - **顺手修 punycode 死循环 bug**：`punycodeDecode` 对无 `xn--` 的纯 base36 数字串(如 `1234567890123456`)越界后 `charCodeAt` 返 NaN、`digit<tt` 恒 false 永不 break→死循环。sniffer 会纳入 punycode，用户粘纯数字进工具箱整页卡死。已加 `pos>=length` 越界抛错(`输入意外结束`)，被 sniffer try/catch 吞掉。真实向量 münchen/bücher/中国 仍解正确。`codec.js:194`。
+  - **CDP 真机验证未跑**(作者可代跑或免测)。临时脚本可清理(清单见下)。
+  - **临时脚本清单（全部可删）**：`_addutf7 _basetest _basetest2 _bbtest _bigtest _cipherverify _fiximport _fiximport2 _gen_base2048 _gen_bigbase _base2048_table.json i18n_payload.json inject_i18n.mjs`（注：payload/inject 删前先把 i18n 落盘）。`_gen_base2048.mjs`/`_gen_bigbase.mjs` 是码表再生成器，删前考虑在 bigBase.js 头注明来源。
+
+- [x] **P4 重型加密 WASM（2026-07-07，一期+二期完成）**：AES/DES/3DES/RC4/ChaCha20 + RSA(PKCS1v15/OAEP) 全部**接审计 C 库(mbedTLS 2.28.10)编 WASM，未手抄一行密码算法**。SM4/SM2 走 GmSSL 3.x 二期已完成(见文末二期段)。**实现**：`wasm/mbedtls_config.h`(裁剪配置，只留所需模块) + `wasm/src/crypto_sym.c`(对称，enum algo/mode，PKCS7，ECB/CBC/CTR) + `wasm/src/crypto_rsa.c`(RSA，PEM/DER 解析，PKCS1v15/OAEP；`EM_JS` 桥接 `crypto.getRandomValues` 补 WASM 无系统熵)。编入 `public/core.loader.wasm`(89253 字节)，标准测试向量全过(AES ECB/CBC/CTR/PKCS7、DES/3DES 2key/3key、RC4、ChaCha20 RFC7539、RSA 双 padding 往返)。**封送层** `src/wasm/bridge.js` 加 `symCrypt`/`rsaCrypt`(多缓冲区 malloc/free，返回 Uint8Array|{error}|null)。**UI 接入**(轻改)：`src/core/cryptoTool.js` 新模块把字节级 bridge 包成工具箱要的「字符串进串出」同步 fn，密钥/IV/密文的字节↔文本走可选编码选择器(utf8/hex/base64，CTF 与日常习惯都覆盖)；注册进 `ciphers.js` 的 `CRYPTO_CIPHERS`(cat:modern，共 6 项)；`ToolMenu.js` 的 `buildCtrl` 轻改支持 `select`/`textarea` 参数类型 + `labelKey||label` 兼容。i18n `cipher.{aes,des,des3,rc4,chacha20,rsa}` + `cryptoParam.*`(14) + `cryptoTool.*`(9) 中英镜像。嗅探天然排除(密钥参数 default 空→`isSniffable` 返 false)。node 端到端往返全绿(对称 5 种 + RSA 双 padding)。CDP 真机验证未跑(作者免测)。 **【二期 SM4/SM2（GmSSL 3.x，Apache-2.0）】** SM4：`wasm/src/crypto_sm.c` 用 GmSSL 审计过的 `sm4.c` 单块 API 自实现 ECB/CBC/CTR+PKCS7(与 crypto_sym.c 循环调单块同性质，非手抄轮函数)，源闭包极小(仅 sm4.c，sm4.h→ghash.h→gf128.h 纯头不链 GCM)。国标 GB/T 32907 单块向量对上(681edf34d206965e86b3e94f536e4246)。SM2：`wasm/src/crypto_sm2.c` 绕过 sm2_key.c 的 PEM/DER/x509 重依赖——裸 32B 私钥标量 / 64B(或 65B 带 04)公钥点直接构造 SM2_KEY，密文按 C1C3C2(C1=04||x||y) 字节布局自拼避开 asn1，与 BouncyCastle/主流国密工具默认一致；调 GmSSL 审计过的 sm2_do_encrypt/do_decrypt。源闭包 sm2_enc.c+sm2_z256.c+sm2_z256_table.c+sm3.c+hex.c(-O3 DCE 丢掉未调 asn1 分支，不编 asn1.c/oid.c)。**RNG**：GmSSL rand_bytes 默认读 /dev/urandom，WASM 无此设备→crypto_sm2.c 提供同签名 rand_bytes 覆盖符号，走 EM_JS(复用 crypto_rsa.c 的 cb_js_random，extern 声明避免重复符号)，不编 rand.c。封送层加 `sm4Crypt`/`sm2Crypt`；cryptoTool.js 加 sm4Run/sm4Def + sm2Run/sm2Def，注册 sm4(key/iv/mode 全参)+sm2(hex 密钥 textarea)，CRYPTO_CIPHERS 共 8 项。i18n `cipher.{sm4,sm2}`+`cryptoParam.sm2Key` 中英镜像(cipher 56/cryptoParam 15/cryptoTool 9 齐)。**验证**：SM4 三模式往返+错误码全绿；SM2 GM/T 0003 标准配对(pub=priv·G)加解密成功(证曲线运算与标准一致)、错配私钥被 C3 摘要校验拒绝(-3)、hex 密文兼容、C1 带/不带 04 前缀均解;node 端到端全链路全绿;自检 11 项未破坏。踩坑：wasm-ld duplicate symbol(cb_js_random+rand_bytes)——EM_JS 改 extern 复用+残留 .o 干净重编解决;build.sh 行级 split 插入避开 CRLF/LF 锚点 MISS。CDP 真机验证未跑(作者免测)。
+
+---
+
+## ▍2026-07-07 编解码/加解密审计（deepseek-pro 报告核查 + 自查）
+
+外部 agent（deepseek-pro）交来 `bug-report.md`，声称加解密/编码有 bug。逐条核查 + 全量往返自测后结论：**该报告未触及任何加解密(crypto)真 bug**，crypto 层 0 条问题，与上轮全链路验证一致。但自查另发现多个编解码字表/算法真 bug（报告漏了）。
+
+### 已修（真 bug，均经往返自测验证）
+
+- **元素周期表 `cnCiphers.js`**（报告漏报，作者点名）：
+  - 序号 30 `Zi` → `Zn`（锌拼写错，Zi 非元素）
+  - 序号 53 `In` → `I`（碘缺失且与 49 号铟重复；`indexOf` 命中首个 → charCode 全错，CTF 数字/字母映射直接坏）
+  - 全表与 IUPAC 118 元素零差异，`Hi5`/`flag`/`I` 往返闭环。
+- **CaesarBox `ctfExtra.js`**（报告漏报）：非整除长度往返损坏（`HELLOWORLD` h=3 → `HEWLOLORDL`）。根因 decode 靠 NUL 占位重建锯齿网格失败。重写为精确列长锯齿重建，7 例含非整除全绿。
+- **codec.js radixN 系列**（报告漏报，静默丢字节，最危）：
+  - `radixNEncode` 删 `if(num===0n) out=dict[0]`：空串/全零字节 encode 多吐首字符（base58 `""`→`"1"`）。
+  - base62/base36 `decode` 补前导零字节还原（原本只有 base58 有）：encode 补零 decode 不还原 → 前导 ` ` 静默丢失。三码表含全零字节往返全绿。
+  - **base69Decode** 重写：原 `replace(/(?:00000000)*$/,"")` 盲剥尾零，把合法尾部 ` ` 删掉；且 `AA` 填充对当数据解。改为靠 pad 标记 `(AA)*(pad-1)+digit+"="` 精确反推原始字节数 N，取前 N 字节。14 例含尾零边界全绿。
+  - hexDecode/hexReverseDecode/binaryDecode 空输入守卫：encode `""`→`""`，decode 收 `""` 应回 `""` 而非抛「非法/不对齐」。
+- **sniffer.js `COMMON_WORDS`**（报告 L1）：删重复的 `"was"`。
+- **segment.js 中文短文本误拆**（报告 H1）：五言绝句/对联无标点时 proseCount=0 落兜底逐行拆。加 CJK≥50% 整段守卫，诗词/对联不拆，URL 列表/英文短码仍正确拆。
+
+### 复核为「非 bug / 有意行为」
+
+- `ctfCiphers.js` brailleDecode 行尾 `.replace(//g,"\r\n")`：``(单元分隔符)→CRLF 是 ToolsFx 行分隔约定，非乱码。
+- `codec.js` base16x（base16Decode）`if(byte!==0) out.push(byte)`：ToolsFx 有意过滤零字节，注释已标，列为**已知有损**，非疏漏。
+- Hill/PlayFair/FourSquare 的 X 填充：分组密码补位特性，往返带 X 属正常；Hill 过维基向量 ACT↔POH。
+- base58Decode 空串（报告 L5 提的 base58/62 空输入）：修 radixNEncode 后往返正常，非 bug。
+- punycode 尾 sigma 不做 IDNA final-sigma 映射：与 WHATWG URL 及 legacy punycode 模块一致，正确。
+
+### 已修（报告 M 类工程隐患，2026-07-07 二轮，均经 node 读回 + 语法校验）
+
+- **M1 ✅** `HexView.js` 已返回 `{destroy}`（disconnect ResizeObserver），但 `SplitView` 里 `requestAnimationFrame(()=>renderHexView(...))` 丢弃了句柄 → 修为捕获进 `hexHandle`，聚合到视图 `destroy()`。
+- **M2 ✅** `blurReveal.js`：`makeRippleVeil` 加显式 `destroy()`（停转 + 断 canvas ResizeObserver，不再只靠 draw 循环 `isConnected` 兜底——canvas 若从未进 draw 循环则永不触发）。`frostOverlay` 契约改 `{el, destroy}`，host 上 4 个监听器统一挂 `AbortController.signal`，destroy 时 `ac.abort()` 一次性摘除。
+- **M3(生命周期总闸) ✅** `main.js` 加模块级 `currentView` + `destroyCurrentView()`，在 `showLanding`(复位前) 与 `handleReadWithItem`(开头) 两入口调用，覆盖复位/切候选/语言切换(i18n:change 直接重渲不经 showLanding)/吃新文件全路径；`renderSplit` 返回值存 `currentView`。这是 M1/M2 真正生效的前提——子资源有了 destroy，还需宿主在重渲染时调它。
+- **M5 ✅** `deploy-pages.yml`：`path: .` → 白名单组装 `_site`（`cp index.html LICENSE README.md .nojekyll` + `cp -r css src public examples docs`）再上传。白名单而非 path+排除，从根上杜绝 `临时/`(ToolsFx/CyberChef 源)、`wasm/`(mbedTLS/GmSSL C 源)、内部文档(PROGRESS/bug-report)泄漏，即便 `git add -f 临时/` 也进不了产物。本地模拟 cp 验产物干净；运行时 WASM 走 `public/core.loader.js` 不碰被排除的 `wasm/` 源。新增站点资源须在 workflow 白名单登记。
+
+### 仍未修（低危，当前无害，待定夺）
+
+- **M3/L4** `main.js` `showLanding()` 未 await：内部 DOM 操作同步，当前无害；`#try=` 启动理论上 DOM 交错。低危。
+- **M4** `ClassifierFactory.js`：`classifyAll` 每个命中分类器 `new Cls()` 两次（match 一次、parse 一次）。当前分类器构造无副作用，仅轻微浪费；若将来构造有副作用会重复执行。
+- **L2** `culture.js` CipaiClassifier.match `const t=` 遮蔽 i18n `t()`：当前 match 未调 t()，无 bug，隐患。
+- **L3** `InvisibleStego.js`：match 与 parse 各调一次 `detect()`，长文本重复遍历。可缓存到实例。
 
 ---
 

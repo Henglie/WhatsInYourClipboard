@@ -18,6 +18,7 @@ import { applyLiquidGlass } from "../ui/liquidGlass.js";
 import { createStepper } from "../ui/stepper.js";
 import { renderVisibleText } from "./renderers/visibleText.js";
 import { t } from "../i18n/i18n.js";
+import { sniff } from "../core/sniffer.js";
 
 export function renderToolMenu(container, raw) {
   // 分类定义：顺序即展示顺序。kind 决定调用哪套注册表 / try 函数。
@@ -43,6 +44,11 @@ export function renderToolMenu(container, raw) {
   hint.className = "toolbox__hint";
   hint.textContent = t("toolbox.hint");
   wrap.appendChild(hint);
+
+  // 智能嗅探区（占位，内容在 runTool 定义后填充；视觉居工具箱顶部）
+  const snifferBox = document.createElement("div");
+  snifferBox.className = "sniffer";
+  wrap.appendChild(snifferBox);
 
   // 控制区（选中工具后出现）：方向切换 + 参数 + 次数
   const ctrlBox = document.createElement("div");
@@ -139,12 +145,32 @@ export function renderToolMenu(container, raw) {
         const field = document.createElement("label");
         field.className = "toolbox__field";
         const lab = document.createElement("span");
-        lab.textContent = t(sp.label);
-        const inp = document.createElement("input");
-        inp.type = sp.type === "number" ? "number" : "text";
-        inp.value = sp.default ?? "";
-        inp.className = "toolbox__input";
-        inp.addEventListener("input", renderResult);
+        lab.textContent = t(sp.labelKey || sp.label);
+        let inp;
+        if (sp.type === "select") {
+          inp = document.createElement("select");
+          inp.className = "toolbox__input toolbox__select";
+          for (const opt of sp.options || []) {
+            const o = document.createElement("option");
+            o.value = opt.value;
+            o.textContent = opt.labelKey ? t(opt.labelKey) : opt.label;
+            inp.appendChild(o);
+          }
+          inp.value = sp.default ?? (sp.options && sp.options[0] && sp.options[0].value) ?? "";
+          inp.addEventListener("change", renderResult);
+        } else if (sp.type === "textarea") {
+          inp = document.createElement("textarea");
+          inp.className = "toolbox__input toolbox__textarea";
+          inp.rows = 4;
+          inp.value = sp.default ?? "";
+          inp.addEventListener("input", renderResult);
+        } else {
+          inp = document.createElement("input");
+          inp.type = sp.type === "number" ? "number" : "text";
+          inp.value = sp.default ?? "";
+          inp.className = "toolbox__input";
+          inp.addEventListener("input", renderResult);
+        }
         inputs[sp.name] = () => inp.value;
         field.append(lab, inp);
         prow.appendChild(field);
@@ -191,6 +217,62 @@ export function renderToolMenu(container, raw) {
     buildCtrl();
     renderResult();
   };
+
+  // —— 智能嗅探：进工具箱自动把无参解码器跑一遍，浮出有意义的解 ——
+  {
+    const sniffTitle = document.createElement("div");
+    sniffTitle.className = "sniffer__title";
+    sniffTitle.textContent = t("sniffer.title");
+
+    const hits = sniff(raw);
+    if (!hits.length) {
+      snifferBox.classList.add("sniffer--empty");
+      const empty = document.createElement("p");
+      empty.className = "sniffer__empty";
+      empty.textContent = t("sniffer.empty");
+      snifferBox.append(sniffTitle, empty);
+    } else {
+      const sniffHint = document.createElement("p");
+      sniffHint.className = "sniffer__hint";
+      sniffHint.textContent = t("sniffer.hint");
+
+      const search = document.createElement("input");
+      search.type = "search";
+      search.className = "sniffer__search";
+      search.placeholder = t("sniffer.searchPlaceholder");
+
+      const list = document.createElement("div");
+      list.className = "sniffer__list lg-stagger";
+
+      const cards = [];
+      for (const h of hits) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "sniffer__card";
+        const name = h.def.labelKey ? t(h.def.labelKey) : h.def.label;
+        const nameEl = document.createElement("span");
+        nameEl.className = "sniffer__card-name";
+        nameEl.textContent = name;
+        const prevEl = document.createElement("span");
+        prevEl.className = "sniffer__card-preview";
+        prevEl.textContent = h.preview;   // textContent 防注入
+        card.append(nameEl, prevEl);
+        card.addEventListener("click", () => {
+          runTool(card, h.kind, h.id, h.def);
+          resultBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+        cards.push({ card, hay: (name + " " + h.preview).toLowerCase() });
+        list.appendChild(card);
+      }
+
+      search.addEventListener("input", () => {
+        const q = search.value.trim().toLowerCase();
+        for (const c of cards) c.card.style.display = (!q || c.hay.includes(q)) ? "" : "none";
+      });
+
+      snifferBox.append(sniffTitle, sniffHint, search, list);
+    }
+  }
 
   // —— 分类手风琴 ——
   const registryFor = (kind) => (kind === "codec" ? CODECS : CIPHERS);

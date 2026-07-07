@@ -64,6 +64,18 @@
       "type": "imagelab"
     },
     {
+      "labelKey": "actionLabel.squooshImage",
+      "type": "link",
+      "url": "https://squoosh.app/",
+      "group": "export"
+    },
+    {
+      "labelKey": "actionLabel.vertConvertImage",
+      "type": "link",
+      "url": "https://vert.sh/",
+      "group": "export"
+    },
+    {
       "labelKey": "actionLabel.downloadFile",
       "type": "download",
       "source": "bytes",
@@ -575,6 +587,12 @@
       "template": "{{duration}}"
     },
     {
+      "labelKey": "actionLabel.vertConvertAudio",
+      "type": "link",
+      "url": "https://vert.sh/",
+      "group": "export"
+    },
+    {
       "labelKey": "actionLabel.downloadAudio",
       "type": "download",
       "source": "bytes",
@@ -625,6 +643,23 @@
       "labelKey": "actionLabel.checkIp138",
       "type": "link",
       "url": "https://www.ip138.com/iplookup.php?ip={{ip}}"
+    }
+  ],
+  "stego_invisible": [
+    {
+      "labelKey": "actionLabel.copyHiddenMessage",
+      "type": "copy",
+      "template": "{{hiddenMessage}}"
+    },
+    {
+      "labelKey": "actionLabel.copyCleanText",
+      "type": "copy",
+      "template": "{{visible}}"
+    },
+    {
+      "labelKey": "actionLabel.copyStegoReport",
+      "type": "copy",
+      "template": "{{report}}"
     }
   ]
 }

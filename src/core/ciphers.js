@@ -43,6 +43,19 @@ import {
   grayEncode, grayDecode,
   TABLE_AZ_NO_J, TABLE_ADFGVX,
 } from "./classicalGrid.js";
+import {
+  hillEncode, hillDecode,
+  autoKeyEncode, autoKeyDecode,
+  manchesterEncode, manchesterDecode,
+  type7Encode, type7Decode,
+} from "./classicalExtra.js";
+import {
+  baudotEncode, baudotDecode,
+  bubbleBabbleEncode, bubbleBabbleDecode,
+  emojiSubstEncode, emojiSubstDecode,
+  zero1248Encode, zero1248Decode,
+} from "./ctfEncodings.js";
+import { CRYPTO_CIPHERS } from "./cryptoTool.js";
 
 const A = "abcdefghijklmnopqrstuvwxyz";
 
@@ -360,6 +373,18 @@ export const CIPHERS = {
     encode: (t, p) => fourSquareEncode(t, p.key1 || "ZGPTFOIHMUWDRCNYKEQAXVSBL", p.key2 || "MFNBDCRHSAXYOGVITUEWLQZKP"),
   },
   graycode: { label: "格雷码 GrayCode", labelKey: "cipher.graycode", cat: "classic", fn: grayDecode, encode: grayEncode },
+  hill: {
+    label: "Hill 希尔", labelKey: "cipher.hill", cat: "classic",
+    params: [{ name: "key", label: "cipherParam.keyMatrix", type: "text", default: "GYBNQKURP" }],
+    fn: (t, p) => hillDecode(t, p.key || "GYBNQKURP"),
+    encode: (t, p) => hillEncode(t, p.key || "GYBNQKURP"),
+  },
+  autokey: {
+    label: "AutoKey 自动密钥", labelKey: "cipher.autokey", cat: "classic",
+    params: [{ name: "key", label: "cipherParam.keyword", type: "text", default: "SECRET" }],
+    fn: (t, p) => autoKeyDecode(t, p.key || "SECRET"),
+    encode: (t, p) => autoKeyEncode(t, p.key || "SECRET"),
+  },
 
   // —— 新型 / 中式趣味编码 ——
   rot8000: { label: "ROT8000", labelKey: "cipher.rot8000", cat: "modern", fn: rot8000, encode: rot8000 },
@@ -389,6 +414,26 @@ export const CIPHERS = {
     fn: (t, p) => fracMorseDecode(t, p.key || "ROUNDTABLECFGHIJKMPQSVWXYZ"),
     encode: (t, p) => fracMorseEncode(t, p.key || "ROUNDTABLECFGHIJKMPQSVWXYZ"),
   },
+  baudot: { label: "博多码 Baudot", labelKey: "cipher.baudot", cat: "ctf", fn: baudotDecode, encode: baudotEncode },
+  bubbleBabble: { label: "Bubble Babble", labelKey: "cipher.bubbleBabble", cat: "ctf", fn: bubbleBabbleDecode, encode: bubbleBabbleEncode },
+  emojiSubst: {
+    label: "Emoji 替换（emoji-aes）", labelKey: "cipher.emojiSubst", cat: "ctf",
+    params: [{ name: "shift", label: "cipherParam.shift", type: "number", default: 0 }],
+    fn: (t, p) => emojiSubstDecode(t, Number(p.shift) || 0),
+    encode: (t, p) => emojiSubstEncode(t, Number(p.shift) || 0),
+  },
+  zero1248: { label: "Zero1248", labelKey: "cipher.zero1248", cat: "ctf", fn: zero1248Decode, encode: zero1248Encode },
+  manchester: {
+    label: "曼彻斯特编码", labelKey: "cipher.manchester", cat: "ctf",
+    params: [{ name: "standard", label: "cipherParam.manchesterStd", type: "number", default: 0 }],
+    fn: (t, p) => manchesterDecode(t, Number(p.standard) === 1),
+    encode: (t, p) => manchesterEncode(t, Number(p.standard) === 1),
+  },
+  type7: { label: "Cisco Type 7", labelKey: "cipher.type7", cat: "ctf", fn: type7Decode, encode: (t) => type7Encode(t, 0) },
+
+
+  // —— 重型加密（WASM：mbedTLS）——
+  ...CRYPTO_CIPHERS,
 };
 
 export function tryCipher(id, text, params = {}) {
